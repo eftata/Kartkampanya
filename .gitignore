@@ -1,0 +1,30 @@
+# Node
+node_modules/
+dist/
+.next/
+.turbo/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Ortam
+.env
+.env.*
+!.env.example
+
+# Test çıktıları
+playwright-report/
+test-results/
+
+# Editör / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
