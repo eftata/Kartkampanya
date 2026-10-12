@@ -26,3 +26,5 @@ sözleşme (`CampaignRule`, `PlanRequest`, `PlanResponse`) sık değişecek ve t
 - CI hem TS hem Python adımlarını çalıştırmak zorunda.
 - TypeScript 7 (native) yayında olsa da `typescript-eslint` henüz desteklemediği için
   TypeScript `~6.0` kullanılır; destek gelince yükseltilir.
+- ESLint 10 yayında olsa da `eslint-config-next`'in bağımlı olduğu eklentiler (react, import,
+  jsx-a11y) henüz desteklemediği için tüm monorepo ESLint 9 kullanır.

@@ -50,8 +50,8 @@ kartplan/
 │  └─ adr/                   # mimari karar kayıtları (0001-monorepo.md ...)
 ├─ apps/
 │  └─ web/                   # Next.js: arayüz + API route'ları + admin
-│     ├─ app/(public)/       # landing, kampanya SEO sayfaları
-│     ├─ app/(app)/          # giriş sonrası: plan, kartlarım, kampanyalar, profil
+│     ├─ app/(public)/       # landing (/), kampanya SEO sayfaları (/kampanyalar)
+│     ├─ app/(app)/          # giriş sonrası: /plan, /kartlarim, /kampanyalarim, /profil
 │     ├─ app/admin/          # kampanya onay kuyruğu, katalog yönetimi
 │     ├─ app/api/            # REST endpoint'leri
 │     ├─ lib/                # auth, db client, engine client, e-posta
@@ -86,7 +86,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 
 - [x] Monorepo iskeleti (pnpm, Turborepo, ESLint, Prettier, TS strict)
 - [x] `docker-compose.yml`: PostgreSQL 16, Redis, Mailpit
-- [ ] `apps/web`: Next.js + Tailwind + shadcn/ui, temel layout ve tema
+- [x] `apps/web`: Next.js + Tailwind + shadcn/ui, temel layout ve tema
 - [ ] `packages/db`: Prisma kurulumu, ilk migration (`User`, `Consent`)
 - [ ] Kimlik: Auth.js ile e-posta (magic link) + Google girişi
 - [ ] `services/engine`: uv projesi, FastAPI `/health`, pytest, ruff

@@ -14,7 +14,7 @@ Kullanıcının kredi kartlarını ve aylık harcama profilini alıp, bankaları
 - **Sözleşme:** zod şemaları — `packages/shared`
 - **Motor:** Python 3.12 + FastAPI + OR-Tools (CP-SAT), uv ile yönetilir — `services/engine`
 - **Test:** Vitest, Playwright (e2e), pytest
-- **Araçlar:** pnpm workspace + Turborepo, ESLint (flat config) + Prettier, ruff
+- **Araçlar:** pnpm workspace + Turborepo, ESLint 9 (flat config) + Prettier, ruff
 - **Yerel altyapı:** Docker Compose (Postgres, Redis, Mailpit)
 
 ## Komutlar
@@ -27,12 +27,28 @@ pnpm dev                  # tüm uygulamalar (turbo)
 pnpm lint                 # ESLint
 pnpm typecheck            # tsc --noEmit
 pnpm test                 # Vitest
+pnpm build                # production build (turbo)
 pnpm format               # Prettier
 pnpm --filter @kartplan/shared test   # tek paket
+pnpm --filter @kartplan/web dev       # yalnızca web: http://localhost:3000
 
 # Python motoru (services/engine kurulduktan sonra)
 cd services/engine && uv sync && uv run pytest && uv run ruff check .
 ```
+
+## Web (`apps/web`)
+
+- **Next.js 16** (App Router, Turbopack, `cacheComponents` açık). Eğitim verinden farklı olabilir:
+  kod yazmadan önce `apps/web/node_modules/next/dist/docs/` altındaki ilgili rehberi oku
+  (ör. `middleware` yerine `proxy`, `LayoutProps`/`PageProps` global tipleri, `connection()`).
+- Rota grupları: `(public)` → `/`, `/kampanyalar` (SEO) · `(app)` → `/plan`, `/kartlarim`,
+  `/kampanyalarim`, `/profil` · `admin` → `/admin/kampanyalar` (onay kuyruğu), `/admin/katalog`.
+  Gruplar URL'e eklenmez; farklı gruplarda aynı yol olamaz.
+- Tailwind v4 (`@tailwindcss/turbopack` loader, `tailwind.config` yok; tema `app/globals.css`).
+- shadcn/ui (new-york, neutral): bileşenler `components/ui/`. Ekleme:
+  `pnpm dlx shadcn@latest add <bileşen>` (`apps/web` içinde). Ağ izni yoksa bileşen kaynağını
+  shadcn dokümanından elle kopyala.
+- Fontlar `geist` paketinden yerel yüklenir (build ağa bağımlı değil). `<html lang="tr">`.
 
 ## Mimari kurallar
 

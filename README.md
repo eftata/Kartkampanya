@@ -52,7 +52,7 @@ pnpm dev
 ## Repo yapısı
 
 ```
-apps/web/          Next.js: arayüz + API + admin         (Sprint 0)
+apps/web/          Next.js 16: arayüz + API + admin
 packages/db/       Prisma şeması, migration, seed        (Sprint 0)
 packages/shared/   zod sözleşmeleri (TS ↔ Python)
 services/engine/   Python: CP-SAT optimizer + veri hattı (Sprint 0)
