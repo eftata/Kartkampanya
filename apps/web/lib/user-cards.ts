@@ -5,9 +5,7 @@ import type { Prisma } from "@kartplan/db";
 import { MAX_USER_CARDS } from "@kartplan/shared";
 import type { AddUserCardInput, UserCardDto } from "@kartplan/shared";
 
-export type MutationErrorCode = "not_found" | "conflict" | "limit";
-export type MutationResult<T = undefined> =
-  { ok: true; data: T } | { ok: false; code: MutationErrorCode; error: string };
+import type { MutationResult } from "@/lib/result";
 
 const include = {
   cardProduct: { include: { program: { include: { bank: true } } } },

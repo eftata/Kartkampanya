@@ -48,7 +48,7 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
 - **Next.js 16** (App Router, Turbopack, `cacheComponents` açık). Eğitim verinden farklı olabilir:
   kod yazmadan önce `apps/web/node_modules/next/dist/docs/` altındaki ilgili rehberi oku
   (ör. `middleware` yerine `proxy`, `LayoutProps`/`PageProps` global tipleri, `connection()`).
-- Rota grupları: `(public)` → `/`, `/kampanyalar` (SEO), `/giris` · `(app)` → `/plan`, `/baslangic` (onboarding), `/kartlarim`,
+- Rota grupları: `(public)` → `/`, `/kampanyalar` (SEO), `/giris` · `(app)` → `/plan`, `/baslangic` → `/baslangic/harcama` (onboarding: kartlar → harcama profili; `/plan` ikisi de tamamlanmadan açılmaz), `/kartlarim`,
   `/kampanyalarim`, `/profil` · `admin` → `/admin/kampanyalar` (onay kuyruğu), `/admin/katalog`.
   Gruplar URL'e eklenmez; farklı gruplarda aynı yol olamaz.
 - Tailwind v4 (`@tailwindcss/turbopack` loader, `tailwind.config` yok; tema `app/globals.css`).
@@ -106,8 +106,8 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
 
 ## Uygulama katmanı kalıpları (`apps/web/lib`)
 
-- İş mantığı `lib/<alan>.ts` (ör. `user-cards.ts`): `server-only`, kullanıcı kimliğini parametre
-  alır, `MutationResult` (`ok` / `code` + Türkçe `error`) döner. Sahiplik kontrolü sorguda yapılır
+- İş mantığı `lib/<alan>.ts` (ör. `user-cards.ts`, `spend-profile.ts`): `server-only`, kullanıcı
+  kimliğini parametre alır, `MutationResult` (`lib/result.ts`: `ok` / `code` + Türkçe `error`) döner. Sahiplik kontrolü sorguda yapılır
   (`where: { id, userId }`).
 - Arayüz → `lib/<alan>-actions.ts` (Server Actions, kendi içinde `requireUser()` çağırır).
   API → `app/api/**/route.ts` ince kalır: `withUser()` (401) + `parseJson(request, ZodŞema)` (400).

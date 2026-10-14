@@ -101,7 +101,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 - [x] Şema: `Bank`, `Program`, `CardProduct`, `EarnRate`, `Category`, `Merchant`, `UserCard`, `SpendProfile`
 - [x] Seed: 5 program (Bonus, Maximum, World, Axess, Paraf/CardFinans), her birinden 3–5 popüler kart, 6 ana kategori + 30 popüler marka — kart adları, puan değerleri ve oranlar **doğrulanmadı** (`ratesVerifiedAt`/`pointValueVerifiedAt` boş, oranlar 0); admin panelinde kaynakla doğrulanacak
 - [x] Onboarding sihirbazı: banka → program → kart seçimi (kart numarası yok), opsiyonel limit ve kesim günü — `/baslangic`; kartsız kullanıcı `/plan`dan buraya yönlenir; API: `GET /api/catalog/banks`, `GET/POST /api/me/cards`, `DELETE /api/me/cards/{id}`
-- [ ] Harcama profili ekranı: kategori seçimi + aylık tutar kaydırıcısı + tercih edilen markalar
+- [x] Harcama profili ekranı: kategori seçimi + aylık tutar kaydırıcısı + tercih edilen markalar — onboarding 2. adımı `/baslangic/harcama` (form `components/spend-profile-form.tsx`, Profilim'de yeniden kullanılacak); profil yoksa `/plan` buraya yönlenir; API: `GET /api/catalog/categories`, `GET/PUT /api/me/spend-profile` (PUT profili bütünüyle değiştirir)
 - [ ] "Kartlarım" ve "Profilim" düzenleme sayfaları
 - [ ] Admin: katalog CRUD (banka/program/kart/kazanç oranı), rol tabanlı erişim
 

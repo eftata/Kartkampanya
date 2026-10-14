@@ -2,7 +2,7 @@ import { AddUserCardInput } from "@kartplan/shared";
 
 import { jsonError, parseJson, withUser } from "@/lib/api";
 import { addUserCard, listUserCards } from "@/lib/user-cards";
-import type { MutationErrorCode } from "@/lib/user-cards";
+import type { MutationErrorCode } from "@/lib/result";
 
 const STATUS: Record<MutationErrorCode, number> = { not_found: 400, conflict: 409, limit: 422 };
 

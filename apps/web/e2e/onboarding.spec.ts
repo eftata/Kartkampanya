@@ -51,8 +51,53 @@ test("yeni kullanıcı kartlarını ekler, düzeltir ve plana geçer", async ({ 
   ).toHaveCount(1);
 
   await page.getByRole("link", { name: "Devam et" }).click();
+  await expect(page).toHaveURL("/baslangic/harcama");
+
+  // Harcama profili tamamlanmadan plan açılmaz.
+  await page.goto("/plan");
+  await expect(page).toHaveURL("/baslangic/harcama");
+
+  // Adım 2: harcama profili
+  const save = page.getByRole("button", { name: "Kaydet ve planımı gör" });
+  await expect(save).toBeDisabled();
+
+  await page.getByRole("button", { name: "Market", exact: true }).click();
+  const market = page.getByRole("region", { name: "Market" });
+  await market.getByLabel("Market aylık tutar (TL)").fill("6000");
+  await market.getByRole("button", { name: "Migros" }).click();
+  await expect(market.getByRole("button", { name: "Migros" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  await page.getByRole("button", { name: "Akaryakıt", exact: true }).click();
+  await page.getByLabel("Akaryakıt aylık tutar (TL)").fill("3000");
+
+  // Seçilip vazgeçilen kategori profile girmez.
+  await page.getByRole("button", { name: "Giyim", exact: true }).click();
+  await page.getByRole("button", { name: "Giyim", exact: true }).click();
+  await expect(page.getByRole("region", { name: "Giyim" })).toHaveCount(0);
+
+  await expect(page.getByTestId("spend-total")).toHaveText("₺9.000");
+
+  // Sıfır tutar reddedilir.
+  await page.getByLabel("Akaryakıt aylık tutar (TL)").fill("0");
+  await save.click();
+  await expect(page.getByRole("alert").filter({ hasText: "aylık tutar gir" })).toBeVisible();
+  await page.getByLabel("Akaryakıt aylık tutar (TL)").fill("3000");
+
+  await save.click();
   await expect(page).toHaveURL("/plan");
   await expect(page.getByRole("heading", { name: "Bu ayın planı" })).toBeVisible();
+
+  // Kaydedilen profil geri yüklenir.
+  await page.goto("/baslangic/harcama");
+  await expect(page.getByLabel("Market aylık tutar (TL)")).toHaveValue("6000");
+  await expect(page.getByLabel("Akaryakıt aylık tutar (TL)")).toHaveValue("3000");
+  await expect(
+    page.getByRole("region", { name: "Market" }).getByRole("button", { name: "Migros" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("spend-total")).toHaveText("₺9.000");
 });
 
 test("kart API'leri: katalog açık, /api/me oturum ister ve girdiyi doğrular", async ({
@@ -99,4 +144,53 @@ test("kart API'leri: katalog açık, /api/me oturum ister ve girdiyi doğrular",
   expect(list.cards).toHaveLength(1);
   expect((await api.delete(`/api/me/cards/${card.id}`)).status()).toBe(204);
   expect((await api.delete(`/api/me/cards/${card.id}`)).status()).toBe(404);
+});
+
+test("harcama profili API'leri: kategoriler açık, profil oturum ister ve doğrulanır", async ({
+  page,
+  request,
+}) => {
+  const res = await request.get("/api/catalog/categories");
+  expect(res.status()).toBe(200);
+  const { categories } = (await res.json()) as {
+    categories: { id: string; slug: string; merchants: { id: string; name: string }[] }[];
+  };
+  expect(categories.map((c) => c.slug)).toEqual(
+    expect.arrayContaining(["akaryakit", "e-ticaret", "giyim", "market", "restoran", "seyahat"]),
+  );
+  const market = categories.find((c) => c.slug === "market")!;
+  const fuel = categories.find((c) => c.slug === "akaryakit")!;
+
+  expect((await request.get("/api/me/spend-profile")).status()).toBe(401);
+  expect((await request.put("/api/me/spend-profile", { data: { items: [] } })).status()).toBe(401);
+
+  await signUp(page);
+  const api = page.request;
+  expect(await (await api.get("/api/me/spend-profile")).json()).toEqual({
+    items: [],
+    totalKurus: 0,
+  });
+
+  expect((await api.put("/api/me/spend-profile", { data: { items: [] } })).status()).toBe(400);
+  const wrongMerchant = await api.put("/api/me/spend-profile", {
+    data: {
+      items: [
+        { categoryId: fuel.id, monthlyKurus: 100_000, merchantIds: [market.merchants[0]!.id] },
+      ],
+    },
+  });
+  expect(wrongMerchant.status()).toBe(400);
+
+  const saved = await api.put("/api/me/spend-profile", {
+    data: {
+      items: [
+        { categoryId: market.id, monthlyKurus: 600_000, merchantIds: [market.merchants[0]!.id] },
+        { categoryId: fuel.id, monthlyKurus: 300_000 },
+      ],
+    },
+  });
+  expect(saved.status()).toBe(200);
+  const profile = (await saved.json()) as { totalKurus: number; items: { categorySlug: string }[] };
+  expect(profile.totalKurus).toBe(900_000);
+  expect(profile.items.map((i) => i.categorySlug).sort()).toEqual(["akaryakit", "market"]);
 });

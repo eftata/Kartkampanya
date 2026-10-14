@@ -287,9 +287,8 @@ export function CardWizard({
             </ul>
           )}
           {cards.length > 0 ? (
-            // Harcama profili ekranı hazır olunca onboarding'in 2. adımına yönlenecek.
             <Button asChild className="w-full">
-              <Link href="/plan">Devam et</Link>
+              <Link href="/baslangic/harcama">Devam et</Link>
             </Button>
           ) : (
             <Button className="w-full" disabled>
