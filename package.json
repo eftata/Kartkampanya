@@ -14,6 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:e2e": "pnpm --filter @kartplan/web test:e2e",
+    "engine:dev": "cd services/engine && uv run uvicorn engine.api:app --reload --port 8000",
+    "engine:check": "cd services/engine && uv run ruff check . && uv run ruff format --check . && uv run mypy engine tests && uv run pytest",
     "db:migrate": "pnpm --filter @kartplan/db db:migrate",
     "db:deploy": "pnpm --filter @kartplan/db db:deploy",
     "db:seed": "pnpm --filter @kartplan/db db:seed",

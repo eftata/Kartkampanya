@@ -37,8 +37,10 @@ pnpm db:studio                        # Prisma Studio
 pnpm --filter @kartplan/shared test   # tek paket
 pnpm --filter @kartplan/web dev       # yalnızca web: http://localhost:3000
 
-# Python motoru (services/engine kurulduktan sonra)
-cd services/engine && uv sync && uv run pytest && uv run ruff check .
+# Python motoru (services/engine) — Python 3.12, uv
+cd services/engine && uv sync         # ilk kurulum (uv python install 3.12 gerekebilir)
+pnpm engine:dev                       # http://localhost:8000 (--reload)
+pnpm engine:check                     # ruff check + ruff format --check + mypy --strict + pytest
 ```
 
 ## Web (`apps/web`)
@@ -72,6 +74,17 @@ cd services/engine && uv sync && uv run pytest && uv run ruff check .
 - Kullanım: `import { getPrisma } from "@kartplan/db"` — modül seviyesinde istemci oluşturma.
 - Modeller ROADMAP'teki taslaktan sprint sprint eklenir; her şema değişikliği migration + seed ile gelir.
 - DB testleri `DATABASE_URL` yoksa atlanır; yerelde Postgres açıkken çalışır.
+
+## Motor (`services/engine`) — ayrıntı: docs/adr/0004-engine.md
+
+- FastAPI uygulaması `engine/api.py`. `/health` açık; diğer tüm uçlar `protected` router'ına
+  eklenir ve `Authorization: Bearer <ENGINE_TOKEN>` ister. `ENGINE_TOKEN` boşsa korumalı uçlar 503
+  döner (kapalı başarısızlık). OpenAPI/docs sayfaları kapalı.
+- Ayarlar `engine/settings.py` (pydantic-settings; yerelde kök `.env`, üretimde ortam değişkenleri).
+- Kod kuralları: ruff (güvenlik kuralları dahil), `mypy --strict`, testler `tests/` altında pytest.
+  Para yine kuruş cinsinden `int`; float ile para hesabı yok.
+- Docker: `docker build -t kartplan-engine services/engine` (çok aşamalı, root olmayan kullanıcı,
+  `PORT` değişkenini dinler).
 
 ## Mimari kurallar
 
