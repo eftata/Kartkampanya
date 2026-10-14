@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { AddUserCardInput, looksLikeCardNumber } from "./cards";
+import { AddUserCardInput, looksLikeCardNumber, UpdateUserCardInput } from "./cards";
 
 describe("looksLikeCardNumber", () => {
   it.each([
@@ -54,5 +54,24 @@ describe("AddUserCardInput", () => {
     const result = AddUserCardInput.safeParse({ cardProductId: "c1", ...extra });
     expect(result.success).toBe(false);
     expect(result.error?.issues[0]?.message).toMatch(message);
+  });
+});
+
+describe("UpdateUserCardInput", () => {
+  it("yalnızca gönderilen alanları içerir; boş ad ve null değer temizler", () => {
+    expect(UpdateUserCardInput.parse({ limitKurus: 100 })).toEqual({ limitKurus: 100 });
+    expect(
+      UpdateUserCardInput.parse({ nickname: " ", limitKurus: null, statementDay: null }),
+    ).toEqual({
+      nickname: null,
+      limitKurus: null,
+      statementDay: null,
+    });
+  });
+
+  it("kart türünün değiştirilmesine ve kart numarasına izin vermez", () => {
+    expect(UpdateUserCardInput.safeParse({ cardProductId: "c2" }).success).toBe(false);
+    expect(UpdateUserCardInput.safeParse({ nickname: "4111111111111111" }).success).toBe(false);
+    expect(UpdateUserCardInput.safeParse({ statementDay: 40 }).success).toBe(false);
   });
 });

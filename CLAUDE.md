@@ -111,6 +111,8 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   (`where: { id, userId }`).
 - Arayüz → `lib/<alan>-actions.ts` (Server Actions, kendi içinde `requireUser()` çağırır).
   API → `app/api/**/route.ts` ince kalır: `withUser()` (401) + `parseJson(request, ZodŞema)` (400).
+- Ortak istemci bileşenleri: `components/card-manager.tsx` (kart ekle/düzenle/kaldır; onboarding +
+  Kartlarım) ve `components/spend-profile-form.tsx` (onboarding + Profilim).
 - Girdi şemaları ve DTO'lar `packages/shared` içinde; para girişi `parseTlInput`, gösterimi
   `formatKurus`. Serbest metin alanlarında kart numarası `looksLikeCardNumber` ile reddedilir.
 - DB testleri `apps/web` Vitest'inde de çalışır (kök `.env`; `server-only` testte etkisiz).

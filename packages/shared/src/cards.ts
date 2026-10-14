@@ -21,22 +21,39 @@ export const MAX_USER_CARDS = 20;
 /** Kart limiti üst sınırı: 10.000.000 TL (kuruş). */
 export const MAX_LIMIT_KURUS = 1_000_000_000;
 
+const Nickname = NoCardNumber(z.string().trim().max(40, "Ad en fazla 40 karakter olabilir."));
+const LimitKurus = Kurus.min(1, "Limit sıfırdan büyük olmalı.").max(
+  MAX_LIMIT_KURUS,
+  "Limit çok yüksek görünüyor.",
+);
+const StatementDay = z
+  .number()
+  .int()
+  .min(1, "Kesim günü 1–31 arasında olmalı.")
+  .max(31, "Kesim günü 1–31 arasında olmalı.");
+
 export const AddUserCardInput = z.object({
   cardProductId: z.string().min(1, "Bir kart seçin."),
-  nickname: NoCardNumber(z.string().trim().max(40, "Ad en fazla 40 karakter olabilir."))
-    .transform((value) => value || undefined)
-    .optional(),
-  limitKurus: Kurus.min(1, "Limit sıfırdan büyük olmalı.")
-    .max(MAX_LIMIT_KURUS, "Limit çok yüksek görünüyor.")
-    .optional(),
-  statementDay: z
-    .number()
-    .int()
-    .min(1, "Kesim günü 1–31 arasında olmalı.")
-    .max(31, "Kesim günü 1–31 arasında olmalı.")
-    .optional(),
+  nickname: Nickname.transform((value) => value || undefined).optional(),
+  limitKurus: LimitKurus.optional(),
+  statementDay: StatementDay.optional(),
 });
 export type AddUserCardInput = z.infer<typeof AddUserCardInput>;
+
+/**
+ * Kartın ayrıntılarını düzenler. Gönderilmeyen alan değişmez; `null` (veya boş ad) değeri temizler.
+ * Kart türü değiştirilemez: yanlış kart eklendiyse silinip yenisi eklenir.
+ */
+export const UpdateUserCardInput = z
+  .object({
+    nickname: Nickname.transform((value) => value || null)
+      .nullable()
+      .optional(),
+    limitKurus: LimitKurus.nullable().optional(),
+    statementDay: StatementDay.nullable().optional(),
+  })
+  .strict();
+export type UpdateUserCardInput = z.infer<typeof UpdateUserCardInput>;
 
 export const CardType = z.enum(["CREDIT", "DEBIT", "VIRTUAL"]);
 

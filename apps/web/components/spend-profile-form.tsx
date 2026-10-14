@@ -26,7 +26,8 @@ export function SpendProfileForm({
   categories: SpendCategory[];
   initial: SpendProfileDto;
   submitLabel: string;
-  redirectTo: string;
+  /** Verilirse kayıttan sonra buraya gider; verilmezse sayfada kalıp "Kaydedildi" gösterir. */
+  redirectTo?: string;
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Record<string, Selection>>(() =>
@@ -38,11 +39,13 @@ export function SpendProfileForm({
     ),
   );
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const totalTl = Object.values(selected).reduce((sum, s) => sum + s.amountTl, 0);
 
   function toggleCategory(id: string) {
+    setSaved(false);
     setSelected((current) => {
       const next = { ...current };
       if (next[id]) delete next[id];
@@ -52,6 +55,7 @@ export function SpendProfileForm({
   }
 
   function update(id: string, change: Partial<Selection>) {
+    setSaved(false);
     setSelected((current) => {
       const prev = current[id];
       return prev ? { ...current, [id]: { ...prev, ...change } } : current;
@@ -69,6 +73,7 @@ export function SpendProfileForm({
 
   function submit() {
     setError(null);
+    setSaved(false);
     // Kategori sırası katalogdaki gibi kalsın.
     const items = categories
       .filter((c) => selected[c.id])
@@ -80,7 +85,8 @@ export function SpendProfileForm({
     startTransition(async () => {
       const result = await saveSpendProfileAction({ items });
       if (result.error) setError(result.error);
-      else router.push(redirectTo);
+      else if (redirectTo) router.push(redirectTo);
+      else setSaved(true);
     });
   }
 
@@ -211,6 +217,11 @@ export function SpendProfileForm({
       {error && (
         <p role="alert" className="text-destructive text-sm">
           {error}
+        </p>
+      )}
+      {saved && (
+        <p role="status" className="rounded-md bg-emerald-500/10 px-3 py-2 text-sm">
+          Harcama profilin kaydedildi.
         </p>
       )}
     </div>

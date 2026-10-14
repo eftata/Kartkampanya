@@ -3,7 +3,13 @@ import type { PrismaClient } from "@kartplan/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { getCatalogBanks } from "./catalog";
-import { addUserCard, countUserCards, listUserCards, removeUserCard } from "./user-cards";
+import {
+  addUserCard,
+  countUserCards,
+  listUserCards,
+  removeUserCard,
+  updateUserCard,
+} from "./user-cards";
 
 // Gerçek veritabanı gerektirir: `docker compose up -d` + `pnpm db:deploy`.
 describe.skipIf(!process.env.DATABASE_URL)("kullanıcı kartları ve katalog (veritabanı)", () => {
@@ -94,6 +100,32 @@ describe.skipIf(!process.env.DATABASE_URL)("kullanıcı kartları ve katalog (ve
       ok: false,
       code: "not_found",
     });
+  });
+
+  it("ayrıntıları günceller, null ile temizler, gönderilmeyen alana dokunmaz", async () => {
+    const [card] = await listUserCards(ids.alice);
+    const updated = await updateUserCard(ids.alice, card!.id, { limitKurus: 7_500_000 });
+    expect(updated).toMatchObject({
+      ok: true,
+      data: { nickname: "Maaş kartım", limitKurus: 7_500_000, statementDay: 15 },
+    });
+    const cleared = await updateUserCard(ids.alice, card!.id, {
+      nickname: null,
+      statementDay: null,
+    });
+    expect(cleared).toMatchObject({
+      ok: true,
+      data: { nickname: null, limitKurus: 7_500_000, statementDay: null },
+    });
+  });
+
+  it("başka kullanıcının kartını güncelleyemez", async () => {
+    const [card] = await listUserCards(ids.alice);
+    expect(await updateUserCard(ids.bob, card!.id, { limitKurus: 1 })).toMatchObject({
+      ok: false,
+      code: "not_found",
+    });
+    expect((await listUserCards(ids.alice))[0]?.limitKurus).toBe(7_500_000);
   });
 
   it("başka kullanıcının kartını silemez", async () => {

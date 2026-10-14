@@ -3,7 +3,7 @@ import "server-only";
 import { getPrisma } from "@kartplan/db";
 import type { Prisma } from "@kartplan/db";
 import { MAX_USER_CARDS } from "@kartplan/shared";
-import type { AddUserCardInput, UserCardDto } from "@kartplan/shared";
+import type { AddUserCardInput, UpdateUserCardInput, UserCardDto } from "@kartplan/shared";
 
 import type { MutationResult } from "@/lib/result";
 
@@ -69,6 +69,22 @@ export async function addUserCard(
     },
     include,
   });
+  return { ok: true, data: toDto(row) };
+}
+
+/** Kartın ayrıntılarını günceller; yalnızca kullanıcının kendi kartı. Girdi doğrulanmış olmalıdır. */
+export async function updateUserCard(
+  userId: string,
+  userCardId: string,
+  input: UpdateUserCardInput,
+): Promise<MutationResult<UserCardDto>> {
+  const prisma = getPrisma();
+  const { count } = await prisma.userCard.updateMany({
+    where: { id: userCardId, userId },
+    data: input,
+  });
+  if (count !== 1) return { ok: false, code: "not_found", error: "Kart bulunamadı." };
+  const row = await prisma.userCard.findUniqueOrThrow({ where: { id: userCardId }, include });
   return { ok: true, data: toDto(row) };
 }
 
