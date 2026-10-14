@@ -14,7 +14,7 @@ export default function LandingPage() {
       </p>
       <div className="flex gap-3">
         <Button asChild size="lg">
-          <Link href="/plan">Planımı oluştur</Link>
+          <Link href="/giris">Planımı oluştur</Link>
         </Button>
         <Button asChild size="lg" variant="outline">
           <Link href="/kampanyalar">Kampanyalara göz at</Link>

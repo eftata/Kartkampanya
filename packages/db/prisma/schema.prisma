@@ -12,14 +12,18 @@ datasource db {
 }
 
 model User {
-  id          String    @id @default(cuid())
-  email       String    @unique
-  name        String?
-  role        Role      @default(USER)
-  createdAt   DateTime  @default(now())
-  deletedAt   DateTime? // KVKK: hesap silme talebi; 30 gün sonra kalıcı silinir
-  consents    Consent[]
-  notifyPrefs Json      @default("{}")
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime? // Auth.js: magic link ile doğrulanınca dolar
+  name          String?
+  image         String? // Auth.js: Google profil fotoğrafı
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+  deletedAt     DateTime? // KVKK: hesap silme talebi; 30 gün sonra kalıcı silinir
+  accounts      Account[]
+  sessions      Session[]
+  consents      Consent[]
+  notifyPrefs   Json      @default("{}")
 }
 
 enum Role {
@@ -38,4 +42,45 @@ model Consent {
   createdAt DateTime @default(now())
 
   @@index([userId, kind, createdAt])
+}
+
+// --- Auth.js (@auth/prisma-adapter) tabloları; alan adları adaptörün beklediği biçimdedir ---
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
 }

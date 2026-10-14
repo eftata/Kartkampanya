@@ -88,7 +88,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 - [x] `docker-compose.yml`: PostgreSQL 16, Redis, Mailpit
 - [x] `apps/web`: Next.js + Tailwind + shadcn/ui, temel layout ve tema
 - [x] `packages/db`: Prisma kurulumu, ilk migration (`User`, `Consent`)
-- [ ] Kimlik: Auth.js ile e-posta (magic link) + Google girişi
+- [x] Kimlik: Auth.js ile e-posta (magic link) + Google girişi
 - [ ] `services/engine`: uv projesi, FastAPI `/health`, pytest, ruff
 - [ ] CI: lint + typecheck + test (TS ve Python), PR'da zorunlu
 - [ ] Staging deploy: web → Vercel, engine + DB → Railway veya Fly.io

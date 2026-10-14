@@ -13,6 +13,7 @@
     "test": "turbo run test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "test:e2e": "pnpm --filter @kartplan/web test:e2e",
     "db:migrate": "pnpm --filter @kartplan/db db:migrate",
     "db:deploy": "pnpm --filter @kartplan/db db:deploy",
     "db:seed": "pnpm --filter @kartplan/db db:seed",

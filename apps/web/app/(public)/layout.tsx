@@ -14,7 +14,7 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
           <div className="flex items-center gap-2">
             <NavLinks items={[{ href: "/kampanyalar", label: "Kampanyalar" }]} />
             <Button asChild size="sm">
-              <Link href="/plan">Giriş yap</Link>
+              <Link href="/giris">Giriş yap</Link>
             </Button>
           </div>
         </div>

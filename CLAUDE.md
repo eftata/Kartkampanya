@@ -29,6 +29,7 @@ pnpm dev                  # tüm uygulamalar (turbo)
 pnpm lint                 # ESLint
 pnpm typecheck            # tsc --noEmit
 pnpm test                 # Vitest
+pnpm test:e2e             # Playwright (Postgres + Mailpit açık olmalı; build + start yapar)
 pnpm build                # production build (turbo)
 pnpm format               # Prettier
 pnpm db:migrate -- --name <ad>        # şema değişikliği → yeni migration
@@ -53,6 +54,15 @@ cd services/engine && uv sync && uv run pytest && uv run ruff check .
   `pnpm dlx shadcn@latest add <bileşen>` (`apps/web` içinde). Ağ izni yoksa bileşen kaynağını
   shadcn dokümanından elle kopyala.
 - Fontlar `geist` paketinden yerel yüklenir (build ağa bağımlı değil). `<html lang="tr">`.
+
+## Kimlik (`apps/web`) — ayrıntı: docs/adr/0003-auth.md
+
+- Auth.js v5 beta (`next-auth@5.0.0-beta.32`, sabit sürüm) + Prisma adaptörü, veritabanı oturumları.
+- Yapılandırma `apps/web/auth.ts`; giriş sayfası `/giris`, doğrulama `/giris/dogrula`.
+- Korumalı yollar `lib/auth/routes.ts` içinde (`proxy.ts` matcher'ı ile senkron tut).
+- Kullanıcıya özel veri okuyan her yerde `requireUser()` (`lib/auth/session.ts`) çağır; bileşen
+  `<Suspense>` içinde olmalı. Proxy yalnızca iyimser çerez kontrolüdür, yetkilendirme değildir.
+- Magic link e-postaları yerelde Mailpit'e düşer: http://localhost:8025
 
 ## Veritabanı (`packages/db`)
 

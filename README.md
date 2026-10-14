@@ -32,7 +32,7 @@ pnpm db:deploy
 pnpm db:seed              # .env'deki SEED_ADMIN_EMAIL için ADMIN kullanıcı
 
 # 5. Geliştirme
-pnpm dev
+pnpm dev                  # http://localhost:3000 — giriş e-postaları: http://localhost:8025
 ```
 
 | Servis          | Adres                                             |
@@ -54,6 +54,15 @@ pnpm dev
 | `pnpm db:migrate -- --name <ad>` | Şema değişikliğinden yeni migration          |
 | `pnpm db:studio`                 | Prisma Studio                                |
 | `docker compose down -v`         | Altyapıyı durdurur ve verileri siler         |
+
+## Testler
+
+```bash
+pnpm test                 # birim testleri (DB testleri için Postgres açık olmalı)
+pnpm test:e2e             # Playwright: Postgres + Mailpit açık, migration'lar uygulanmış olmalı
+```
+
+İlk kez Playwright çalıştırıyorsan tarayıcıyı kur: `pnpm --filter @kartplan/web exec playwright install chromium`.
 
 ## Repo yapısı
 
