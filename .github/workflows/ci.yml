@@ -153,14 +153,15 @@ jobs:
           cache-to: type=gha,mode=max
       - name: Smoke test the container
         run: |
-          docker run -d --name engine -p 8000:8000 -e ENGINE_TOKEN=ci-token kartplan-engine:ci
+          ENGINE_TOKEN="$(openssl rand -hex 16)"
+          docker run -d --name engine -p 8000:8000 -e ENGINE_TOKEN="$ENGINE_TOKEN" kartplan-engine:ci
           for i in $(seq 1 30); do
             curl -fsS http://localhost:8000/health && break
             sleep 1
           done
           curl -fsS http://localhost:8000/health
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/info)" = "401"
-          curl -fsS -H "Authorization: Bearer ci-token" http://localhost:8000/info
+          curl -fsS -H "Authorization: Bearer ${ENGINE_TOKEN}" http://localhost:8000/info
           test "$(docker exec engine id -u)" = "10001"
       - name: Container logs
         if: always()

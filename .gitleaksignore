@@ -1,0 +1,5 @@
+# Bilinen yanlış alarmlar. Her satır bir gitleaks parmak izidir (commit:dosya:kural:satır).
+# Yalnızca gerçek sır OLMADIĞI doğrulanmış bulgular eklenir; gerekçe üstündeki yorumda yazılır.
+
+# CI Docker duman testindeki sahte "ci-token" değeri (artık her çalıştırmada rastgele üretiliyor).
+b6f705ac71391909d7d3766ae519bb047e057e06:.github/workflows/ci.yml:curl-auth-header:158
