@@ -1,0 +1,41 @@
+// Şemanın tek sahibi bu dosyadır; değişiklikler yalnızca `pnpm db:migrate` ile yapılır.
+// Tam taslak: docs/ROADMAP.md → "Veritabanı şeması". Modeller sprint sprint eklenir.
+// Para tutarları kuruş cinsinden Int (…Kurus), oranlar baz puan Int (…Bps).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  name        String?
+  role        Role      @default(USER)
+  createdAt   DateTime  @default(now())
+  deletedAt   DateTime? // KVKK: hesap silme talebi; 30 gün sonra kalıcı silinir
+  consents    Consent[]
+  notifyPrefs Json      @default("{}")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+// Açık rıza kaydı: her onay/geri çekme yeni bir satırdır, geçmiş korunur.
+model Consent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  kind      String // "kvkk_aydinlatma" | "pazarlama" ...
+  version   String
+  granted   Boolean
+  createdAt DateTime @default(now())
+
+  @@index([userId, kind, createdAt])
+}

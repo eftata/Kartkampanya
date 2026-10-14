@@ -27,7 +27,11 @@ cp .env.example .env
 docker compose up -d
 docker compose ps         # hepsi "healthy" / "running" olmalı
 
-# 4. Geliştirme
+# 4. Veritabanı şeması ve seed
+pnpm db:deploy
+pnpm db:seed              # .env'deki SEED_ADMIN_EMAIL için ADMIN kullanıcı
+
+# 5. Geliştirme
 pnpm dev
 ```
 
@@ -40,20 +44,22 @@ pnpm dev
 
 ## Komutlar
 
-| Komut                    | Açıklama                                     |
-| ------------------------ | -------------------------------------------- |
-| `pnpm dev`               | Tüm uygulamaları geliştirme modunda başlatır |
-| `pnpm lint`              | ESLint                                       |
-| `pnpm typecheck`         | TypeScript tip kontrolü                      |
-| `pnpm test`              | Birim testleri (Vitest)                      |
-| `pnpm format`            | Prettier ile biçimlendirme                   |
-| `docker compose down -v` | Altyapıyı durdurur ve verileri siler         |
+| Komut                            | Açıklama                                     |
+| -------------------------------- | -------------------------------------------- |
+| `pnpm dev`                       | Tüm uygulamaları geliştirme modunda başlatır |
+| `pnpm lint`                      | ESLint                                       |
+| `pnpm typecheck`                 | TypeScript tip kontrolü                      |
+| `pnpm test`                      | Birim testleri (Vitest)                      |
+| `pnpm format`                    | Prettier ile biçimlendirme                   |
+| `pnpm db:migrate -- --name <ad>` | Şema değişikliğinden yeni migration          |
+| `pnpm db:studio`                 | Prisma Studio                                |
+| `docker compose down -v`         | Altyapıyı durdurur ve verileri siler         |
 
 ## Repo yapısı
 
 ```
 apps/web/          Next.js 16: arayüz + API + admin
-packages/db/       Prisma şeması, migration, seed        (Sprint 0)
+packages/db/       Prisma 7 şeması, migration, seed
 packages/shared/   zod sözleşmeleri (TS ↔ Python)
 services/engine/   Python: CP-SAT optimizer + veri hattı (Sprint 0)
 docs/              ROADMAP, ADR'ler

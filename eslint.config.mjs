@@ -12,6 +12,7 @@ export default tseslint.config(
       "**/.next/**",
       "**/.turbo/**",
       "**/coverage/**",
+      "**/generated/**",
       "services/**",
     ],
   },

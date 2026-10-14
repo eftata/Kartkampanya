@@ -23,12 +23,16 @@ Kullanıcının kredi kartlarını ve aylık harcama profilini alıp, bankaları
 pnpm install              # bağımlılıklar
 docker compose up -d      # postgres:5432, redis:6379, mailpit:1025 (UI :8025)
 cp .env.example .env      # ilk kurulumda
+pnpm db:deploy            # migration'ları uygula (ilk kurulumda)
+pnpm db:seed              # seed (SEED_ADMIN_EMAIL → ADMIN kullanıcı)
 pnpm dev                  # tüm uygulamalar (turbo)
 pnpm lint                 # ESLint
 pnpm typecheck            # tsc --noEmit
 pnpm test                 # Vitest
 pnpm build                # production build (turbo)
 pnpm format               # Prettier
+pnpm db:migrate -- --name <ad>        # şema değişikliği → yeni migration
+pnpm db:studio                        # Prisma Studio
 pnpm --filter @kartplan/shared test   # tek paket
 pnpm --filter @kartplan/web dev       # yalnızca web: http://localhost:3000
 
@@ -49,6 +53,15 @@ cd services/engine && uv sync && uv run pytest && uv run ruff check .
   `pnpm dlx shadcn@latest add <bileşen>` (`apps/web` içinde). Ağ izni yoksa bileşen kaynağını
   shadcn dokümanından elle kopyala.
 - Fontlar `geist` paketinden yerel yüklenir (build ağa bağımlı değil). `<html lang="tr">`.
+
+## Veritabanı (`packages/db`)
+
+- **Prisma 7.10** (RC değil). Bağlantı `prisma.config.ts`'de (kök `.env`), şemada `url` yok.
+- İstemci `src/generated/prisma`'ya üretilir (git'te yok); turbo `generate` görevi otomatik çalıştırır.
+  Elle: `pnpm --filter @kartplan/db generate`.
+- Kullanım: `import { getPrisma } from "@kartplan/db"` — modül seviyesinde istemci oluşturma.
+- Modeller ROADMAP'teki taslaktan sprint sprint eklenir; her şema değişikliği migration + seed ile gelir.
+- DB testleri `DATABASE_URL` yoksa atlanır; yerelde Postgres açıkken çalışır.
 
 ## Mimari kurallar
 

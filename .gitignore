@@ -5,6 +5,9 @@ dist/
 .turbo/
 coverage/
 *.tsbuildinfo
+
+# Prisma Client (pnpm generate ile üretilir)
+packages/db/src/generated/
 next-env.d.ts
 
 # Python
