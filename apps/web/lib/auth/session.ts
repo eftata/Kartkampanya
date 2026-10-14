@@ -2,6 +2,7 @@ import "server-only";
 
 import type { Session } from "next-auth";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { auth } from "@/auth";
 import { SIGNED_OUT_REDIRECT } from "@/lib/auth/routes";
@@ -12,10 +13,11 @@ export type CurrentUser = Session["user"];
  * Veri erişim katmanının (DAL) tek kimlik giriş noktası. Oturumu okur; Cache Components
  * nedeniyle çağıran bileşen bir `<Suspense>` sınırının içinde olmalıdır.
  */
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
+  // cache: aynı istekte birden çok bileşen çağırsa da oturum tek kez okunur.
   const session = await auth();
   return session?.user ?? null;
-}
+});
 
 /** Giriş yapılmamışsa landing'e yönlendirir. Korumalı veriye erişen her yerde çağrılır. */
 export async function requireUser(): Promise<CurrentUser> {

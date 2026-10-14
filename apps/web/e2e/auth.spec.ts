@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-import { getMagicLink } from "./mailpit";
+import { signUp, uniqueEmail } from "./helpers";
 
 test("giriş yapmamış kullanıcı korumalı sayfalardan landing'e yönlendirilir", async ({ page }) => {
-  for (const path of ["/plan", "/kartlarim", "/admin/katalog"]) {
+  for (const path of ["/plan", "/baslangic", "/kartlarim", "/admin/katalog"]) {
     await page.goto(path);
     await expect(page).toHaveURL("/");
   }
@@ -11,22 +11,16 @@ test("giriş yapmamış kullanıcı korumalı sayfalardan landing'e yönlendiril
 });
 
 test("magic link ile kayıt olur, giriş yapar ve çıkış yapar", async ({ page }) => {
-  const email = `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@kartplan.test`;
+  const email = uniqueEmail();
 
   await page.goto("/");
   await page.getByRole("link", { name: "Giriş yap" }).click();
   await expect(page).toHaveURL("/giris");
 
-  await page.getByLabel("E-posta").fill(email);
-  await page.getByRole("button", { name: "Giriş bağlantısı gönder" }).click();
-  await expect(page).toHaveURL("/giris/dogrula");
-  await expect(page.getByText("E-postanı kontrol et")).toBeVisible();
-
-  const magicLink = await getMagicLink(email);
-  await page.goto(magicLink);
-  await expect(page).toHaveURL("/plan");
+  const magicLink = await signUp(page, email);
+  // Yeni kullanıcının kartı yok: plan yerine onboarding'e düşer.
+  await expect(page).toHaveURL("/baslangic");
   await expect(page.getByTestId("user-email")).toHaveText(email);
-  await expect(page.getByRole("heading", { name: "Bu ayın planı" })).toBeVisible();
 
   await page.getByRole("button", { name: "Çıkış yap" }).click();
   await expect(page).toHaveURL("/");

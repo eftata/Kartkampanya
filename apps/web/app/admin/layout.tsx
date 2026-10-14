@@ -19,12 +19,13 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
             KartPlan <span className="text-muted-foreground font-normal">· Admin</span>
           </Link>
           <div className="flex items-center gap-4">
-            <NavLinks items={items} />
+            <NavLinks items={items} className="hidden md:flex" />
             <Suspense fallback={<div className="bg-muted h-8 w-24 animate-pulse rounded-md" />}>
               <UserMenu />
             </Suspense>
           </div>
         </div>
+        <NavLinks items={items} className="overflow-x-auto border-t px-2 py-1 md:hidden" />
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
     </>

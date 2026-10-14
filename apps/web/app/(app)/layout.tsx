@@ -22,12 +22,14 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
             <Link href="/plan" className="font-semibold">
               KartPlan
             </Link>
-            <NavLinks items={items} />
+            <NavLinks items={items} className="hidden md:flex" />
           </div>
           <Suspense fallback={<div className="bg-muted h-8 w-24 animate-pulse rounded-md" />}>
             <UserMenu />
           </Suspense>
         </div>
+        {/* Küçük ekranlarda menü ayrı, yatay kaydırılabilir satırda. */}
+        <NavLinks items={items} className="overflow-x-auto border-t px-2 py-1 md:hidden" />
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
     </>

@@ -93,10 +93,11 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Generate Prisma client and apply migrations
+      - name: Generate Prisma client, apply migrations and seed the catalog
         run: |
           pnpm --filter @kartplan/db generate
           pnpm db:deploy
+          pnpm db:seed
       - name: Generate a throwaway AUTH_SECRET
         run: echo "AUTH_SECRET=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
       - name: Install Playwright browser

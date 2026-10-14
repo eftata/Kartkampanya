@@ -1,5 +1,12 @@
 /** Giriş gerektiren yollar: `(app)` rota grubu ve admin paneli. */
-const PROTECTED_PREFIXES = ["/plan", "/kartlarim", "/kampanyalarim", "/profil", "/admin"] as const;
+const PROTECTED_PREFIXES = [
+  "/plan",
+  "/baslangic",
+  "/kartlarim",
+  "/kampanyalarim",
+  "/profil",
+  "/admin",
+] as const;
 
 export function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PREFIXES.some(

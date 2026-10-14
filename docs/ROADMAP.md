@@ -100,7 +100,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 
 - [x] Şema: `Bank`, `Program`, `CardProduct`, `EarnRate`, `Category`, `Merchant`, `UserCard`, `SpendProfile`
 - [x] Seed: 5 program (Bonus, Maximum, World, Axess, Paraf/CardFinans), her birinden 3–5 popüler kart, 6 ana kategori + 30 popüler marka — kart adları, puan değerleri ve oranlar **doğrulanmadı** (`ratesVerifiedAt`/`pointValueVerifiedAt` boş, oranlar 0); admin panelinde kaynakla doğrulanacak
-- [ ] Onboarding sihirbazı: banka → program → kart seçimi (kart numarası yok), opsiyonel limit ve kesim günü
+- [x] Onboarding sihirbazı: banka → program → kart seçimi (kart numarası yok), opsiyonel limit ve kesim günü — `/baslangic`; kartsız kullanıcı `/plan`dan buraya yönlenir; API: `GET /api/catalog/banks`, `GET/POST /api/me/cards`, `DELETE /api/me/cards/{id}`
 - [ ] Harcama profili ekranı: kategori seçimi + aylık tutar kaydırıcısı + tercih edilen markalar
 - [ ] "Kartlarım" ve "Profilim" düzenleme sayfaları
 - [ ] Admin: katalog CRUD (banka/program/kart/kazanç oranı), rol tabanlı erişim
@@ -400,7 +400,7 @@ Tüm endpoint'ler `apps/web/app/api` altındadır, istek/yanıt gövdeleri `pack
 | ------------------- | ----------------------------------------------- | ----------------------------------------- | ------ |
 | GET                 | `/api/catalog/banks`                            | Banka → program → kart ağacı (onboarding) | 1      |
 | GET                 | `/api/catalog/categories`                       | Kategori ve marka listesi                 | 1      |
-| GET / POST / DELETE | `/api/me/cards`                                 | Kullanıcının kartları                     | 1      |
+| GET / POST / DELETE | `/api/me/cards`, `/api/me/cards/{id}`           | Kullanıcının kartları                     | 1      |
 | GET / PUT           | `/api/me/spend-profile`                         | Kategori başına aylık tutar ve markalar   | 1      |
 | GET                 | `/api/me/campaigns?card=&category=&type=&sort=` | Kişiye eşleşen aktif kampanyalar          | 3      |
 | PATCH               | `/api/me/campaigns/{id}`                        | `joined` / `inPlan` işaretleme            | 3      |
