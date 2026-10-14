@@ -6,6 +6,7 @@ en çok kazanacağını gösteren aylık plan al.
 - Yol haritası ve teknik plan: [`docs/ROADMAP.md`](docs/ROADMAP.md)
 - Proje kuralları (Claude Code için): [`CLAUDE.md`](CLAUDE.md)
 - Mimari kararlar: [`docs/adr/`](docs/adr)
+- Staging deploy ve CI: [`docs/deploy.md`](docs/deploy.md)
 
 ## Gereksinimler
 

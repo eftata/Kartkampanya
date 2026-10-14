@@ -86,6 +86,17 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
 - Docker: `docker build -t kartplan-engine services/engine` (çok aşamalı, root olmayan kullanıcı,
   `PORT` değişkenini dinler).
 
+## CI ve deploy — ayrıntı: docs/deploy.md
+
+- `.github/workflows/ci.yml`: web (format, lint, typecheck, migration + test, build), e2e
+  (Postgres + Mailpit servisleriyle Playwright), engine (ruff, mypy, pytest), engine Docker imajı
+  (build + duman testi), gitleaks (tüm geçmiş). Action'lar commit SHA'sına sabitli; güncellerken
+  SHA'yı ve yanındaki sürüm yorumunu birlikte değiştir. Yerelde: `actionlint`.
+- Turbo **strict env** modunda: build sırasında okunan her ortam değişkeni `turbo.json` →
+  `tasks.build.env` listesine eklenmeli (yoksa build onu görmez). Şu an: `AUTH_GOOGLE_ID/SECRET`.
+- Staging: web → Vercel (`apps/web`), Postgres + motor → Railway. Migration'lar Vercel build
+  komutunda `pnpm db:deploy` ile uygulanır.
+
 ## Mimari kurallar
 
 - `apps/web`: iş mantığı `lib/` altında; route dosyaları (`app/**/route.ts`, `page.tsx`) ince kalır.
