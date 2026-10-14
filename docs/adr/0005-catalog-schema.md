@@ -26,6 +26,20 @@ categoryId)` tekil. Bir kategori için satır yoksa temel oran geçerlidir. Bu, 
 - `pointValueTL` `Decimal(10,4)`: puan değeri kesirli olabilir (ör. 1 puan = 0,5 TL); para tutarı
   değildir, kuruş kuralı tutarlar için geçerli kalır.
 
+## Ek: doğrulama işareti ve seed (2026-10-14)
+
+- `Program.pointValueVerifiedAt` ve `CardProduct.ratesVerifiedAt`: `null` = doğrulanmadı.
+  Admin, bankanın kaynağını kontrol edip değeri düzelttiğinde tarih yazılır.
+- Seed (`prisma/seed-data/catalog.ts`) kart adlarını ve puan birimlerini genel bilgiden alır ve
+  her şeyi doğrulanmadı bırakır. Doğrulanmamış temel oran **0**'dır ve kategoriye özel oran
+  girilmez: tahmini bir oran planda kazancı olduğundan yüksek göstermesin.
+- Seed yalnızca eksik kayıtları oluşturur (`upsert` + `update: {}`); admin düzeltmeleri tekrar
+  çalıştırmada ezilmez.
+- ROADMAP'teki "Paraf/CardFinans" için Paraf (Halkbank) seçildi; CardFinans admin panelinden
+  eklenebilir.
+- Optimizer ve arayüz, doğrulanmamış katalog verisini kullanıcıya "tahmini" olarak göstermelidir
+  (Sprint 4).
+
 ## Sonuçlar
 
 - `SpendProfile.merchantIds` taslaktaki gibi kimlik dizisidir (yabancı anahtar yok); uygulama

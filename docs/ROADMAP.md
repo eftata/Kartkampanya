@@ -99,7 +99,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 ### Sprint 1 — Katalog ve onboarding
 
 - [x] Şema: `Bank`, `Program`, `CardProduct`, `EarnRate`, `Category`, `Merchant`, `UserCard`, `SpendProfile`
-- [ ] Seed: 5 program (Bonus, Maximum, World, Axess, Paraf/CardFinans), her birinden 3–5 popüler kart, 6 ana kategori + 30 popüler marka
+- [x] Seed: 5 program (Bonus, Maximum, World, Axess, Paraf/CardFinans), her birinden 3–5 popüler kart, 6 ana kategori + 30 popüler marka — kart adları, puan değerleri ve oranlar **doğrulanmadı** (`ratesVerifiedAt`/`pointValueVerifiedAt` boş, oranlar 0); admin panelinde kaynakla doğrulanacak
 - [ ] Onboarding sihirbazı: banka → program → kart seçimi (kart numarası yok), opsiyonel limit ve kesim günü
 - [ ] Harcama profili ekranı: kategori seçimi + aylık tutar kaydırıcısı + tercih edilen markalar
 - [ ] "Kartlarım" ve "Profilim" düzenleme sayfaları
@@ -215,28 +215,32 @@ model Bank {
 }
 
 model Program {
-  id           String        @id @default(cuid())
-  bankId       String
-  bank         Bank          @relation(fields: [bankId], references: [id])
-  slug         String        @unique // "bonus", "world" — veri hattı adaptörleri bununla eşleşir
-  name         String // Bonus, Maximum, World ...
-  pointName    String // Bonus, MaxiPuan, Worldpuan
-  pointValueTL Decimal       @default(1) @db.Decimal(10, 4) // 1 puan = ? TL
-  cards        CardProduct[]
+  id                   String        @id @default(cuid())
+  bankId               String
+  bank                 Bank          @relation(fields: [bankId], references: [id])
+  slug                 String        @unique // "bonus", "world" — veri hattı adaptörleri bununla eşleşir
+  name                 String // Bonus, Maximum, World ...
+  pointName            String // Bonus, MaxiPuan, Worldpuan
+  pointValueTL         Decimal       @default(1) @db.Decimal(10, 4) // 1 puan = ? TL
+  // null = puan değeri doğrulanmadı (seed tahmini); admin kaynaktan doğrulayınca tarih yazılır.
+  pointValueVerifiedAt DateTime?
+  cards                CardProduct[]
 
   @@unique([bankId, name])
 }
 
 model CardProduct {
-  id          String     @id @default(cuid())
-  programId   String
-  program     Program    @relation(fields: [programId], references: [id])
-  name        String // Bonus Platinum
-  type        CardType
-  annualFee   Int? // kuruş
-  baseRateBps Int        @default(0) // kampanyasız, tüm harcamalara uygulanan temel oran
-  earnRates   EarnRate[] // kategoriye özel oranlar (temel oranın yerine geçer)
-  userCards   UserCard[]
+  id              String     @id @default(cuid())
+  programId       String
+  program         Program    @relation(fields: [programId], references: [id])
+  name            String // Bonus Platinum
+  type            CardType
+  annualFee       Int? // kuruş
+  baseRateBps     Int        @default(0) // kampanyasız, tüm harcamalara uygulanan temel oran
+  earnRates       EarnRate[] // kategoriye özel oranlar (temel oranın yerine geçer)
+  // null = baseRateBps ve earnRates doğrulanmadı (seed tahmini); admin doğrulayınca tarih yazılır.
+  ratesVerifiedAt DateTime?
+  userCards       UserCard[]
 
   @@unique([programId, name])
 }

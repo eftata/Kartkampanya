@@ -77,6 +77,9 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   önce `generate` koşar) ile çalıştır ya da `pnpm --filter @kartplan/db generate`.
 - Şema değiştiğinde ROADMAP'teki şema taslağını da güncelle (ROADMAP tek gerçek kaynak).
 - `prisma migrate reset` veritabanını siler; yalnızca kullanıcı açıkça onaylarsa çalıştırılır.
+- Katalog seed'i (`prisma/seed-data/catalog.ts`) doğrulanmamış veridir: oranlar 0,
+  `ratesVerifiedAt`/`pointValueVerifiedAt` boş. Banka kaynağından doğrulanmadan oran uydurma.
+  Seed yalnızca eksik kayıt ekler, mevcutları ezmez (ADR 0005).
 - DB testleri `DATABASE_URL` yoksa atlanır; yerelde Postgres açıkken çalışır.
 
 ## Motor (`services/engine`) — ayrıntı: docs/adr/0004-engine.md

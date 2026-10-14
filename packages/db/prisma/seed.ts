@@ -1,10 +1,16 @@
 // `pnpm db:seed` (ve `prisma migrate reset`) ile çalışır; tekrar çalıştırılması güvenlidir.
-// Sprint 1'de banka/program/kart kataloğu buraya eklenecek.
 import { createPrismaClient } from "../src/client";
+import { seedCatalog } from "./seed-catalog";
 
 const prisma = createPrismaClient();
 
 async function main() {
+  const catalog = await seedCatalog(prisma);
+  console.log(
+    `Katalog: ${catalog.banks} banka, ${catalog.programs} program, ${catalog.cards} kart, ` +
+      `${catalog.categories} kategori, ${catalog.merchants} marka (oranlar doğrulanmadı).`,
+  );
+
   const adminEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
   if (adminEmail) {
     await prisma.user.upsert({
