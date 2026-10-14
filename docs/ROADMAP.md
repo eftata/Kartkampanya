@@ -90,7 +90,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 - [x] `packages/db`: Prisma kurulumu, ilk migration (`User`, `Consent`)
 - [x] Kimlik: Auth.js ile e-posta (magic link) + Google girişi
 - [x] `services/engine`: uv projesi, FastAPI `/health`, pytest, ruff
-- [ ] CI: lint + typecheck + test (TS ve Python), PR'da zorunlu
+- [x] CI: lint + typecheck + test (TS ve Python), PR'da zorunlu (zorunluluk: `main` ruleset → docs/deploy.md §0)
 - [ ] Staging deploy: web → Vercel, engine + DB → Railway veya Fly.io
 - [x] `CLAUDE.md` ve `docs/adr/0001-monorepo.md`
 
