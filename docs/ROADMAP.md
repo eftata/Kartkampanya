@@ -98,7 +98,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 
 ### Sprint 1 — Katalog ve onboarding
 
-- [ ] Şema: `Bank`, `Program`, `CardProduct`, `EarnRate`, `Category`, `Merchant`, `UserCard`, `SpendProfile`
+- [x] Şema: `Bank`, `Program`, `CardProduct`, `EarnRate`, `Category`, `Merchant`, `UserCard`, `SpendProfile`
 - [ ] Seed: 5 program (Bonus, Maximum, World, Axess, Paraf/CardFinans), her birinden 3–5 popüler kart, 6 ana kategori + 30 popüler marka
 - [ ] Onboarding sihirbazı: banka → program → kart seçimi (kart numarası yok), opsiyonel limit ve kesim günü
 - [ ] Harcama profili ekranı: kategori seçimi + aylık tutar kaydırıcısı + tercih edilen markalar
@@ -218,66 +218,93 @@ model Program {
   id           String        @id @default(cuid())
   bankId       String
   bank         Bank          @relation(fields: [bankId], references: [id])
-  name         String        // Bonus, Maximum, World ...
-  pointName    String        // Bonus, MaxiPuan, Worldpuan
-  pointValueTL Decimal       @default(1)   // 1 puan = ? TL
+  slug         String        @unique // "bonus", "world" — veri hattı adaptörleri bununla eşleşir
+  name         String // Bonus, Maximum, World ...
+  pointName    String // Bonus, MaxiPuan, Worldpuan
+  pointValueTL Decimal       @default(1) @db.Decimal(10, 4) // 1 puan = ? TL
   cards        CardProduct[]
-  campaigns    Campaign[]
+
+  @@unique([bankId, name])
 }
 
 model CardProduct {
-  id        String     @id @default(cuid())
-  programId String
-  program   Program    @relation(fields: [programId], references: [id])
-  name      String     // Bonus Platinum
-  type      CardType
-  annualFee Int?       // kuruş
-  earnRates EarnRate[]
-  userCards UserCard[]
-}
-enum CardType { CREDIT DEBIT VIRTUAL }
+  id          String     @id @default(cuid())
+  programId   String
+  program     Program    @relation(fields: [programId], references: [id])
+  name        String // Bonus Platinum
+  type        CardType
+  annualFee   Int? // kuruş
+  baseRateBps Int        @default(0) // kampanyasız, tüm harcamalara uygulanan temel oran
+  earnRates   EarnRate[] // kategoriye özel oranlar (temel oranın yerine geçer)
+  userCards   UserCard[]
 
-model EarnRate {               // kartın kampanyasız sabit kazanç oranı
+  @@unique([programId, name])
+}
+
+enum CardType {
+  CREDIT
+  DEBIT
+  VIRTUAL
+}
+
+// Kartın bir kategorideki kampanyasız sabit kazanç oranı (ör. akaryakıtta %1).
+// Kategori için satır yoksa CardProduct.baseRateBps geçerlidir. Kart başına kategori tekildir.
+model EarnRate {
   id            String      @id @default(cuid())
   cardProductId String
-  cardProduct   CardProduct @relation(fields: [cardProductId], references: [id])
-  categoryId    String?     // null = tüm harcamalar
-  rateBps       Int         // baz puan: 50 = %0,5
+  cardProduct   CardProduct @relation(fields: [cardProductId], references: [id], onDelete: Cascade)
+  categoryId    String
+  category      Category    @relation(fields: [categoryId], references: [id])
+  rateBps       Int // baz puan: 50 = %0,5
+
+  @@unique([cardProductId, categoryId])
 }
 
 model Category {
-  id        String     @id @default(cuid())
-  slug      String     @unique   // market, akaryakit, e-ticaret
+  id        String         @id @default(cuid())
+  slug      String         @unique // market, akaryakit, e-ticaret
   name      String
   parentId  String?
+  parent    Category?      @relation("CategoryTree", fields: [parentId], references: [id])
+  children  Category[]     @relation("CategoryTree")
   merchants Merchant[]
+  earnRates EarnRate[]
+  spend     SpendProfile[]
 }
 
 model Merchant {
   id         String   @id @default(cuid())
-  name       String   @unique   // Migros, Opet, Trendyol
+  name       String   @unique // Migros, Opet, Trendyol
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
+
+  @@index([categoryId])
 }
+
 
 model UserCard {
   id            String      @id @default(cuid())
   userId        String
-  user          User        @relation(fields: [userId], references: [id])
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   cardProductId String
-  cardProduct   CardProduct @relation(fields: [cardProductId], references: [id])
+  cardProduct   CardProduct @relation(fields: [cardProductId], references: [id], onDelete: Restrict)
   nickname      String?
   limitKurus    Int?
-  statementDay  Int?        // hesap kesim günü 1-31
+  statementDay  Int? // hesap kesim günü 1-31 (uygulama katmanında doğrulanır)
+  createdAt     DateTime    @default(now())
+
+  @@index([userId])
 }
 
 model SpendProfile {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  categoryId  String
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId   String
+  category     Category @relation(fields: [categoryId], references: [id])
   monthlyKurus Int
-  merchantIds String[] // tercih edilen markalar
+  merchantIds  String[] // tercih edilen markalar (Merchant.id)
+
   @@unique([userId, categoryId])
 }
 

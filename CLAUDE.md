@@ -73,6 +73,10 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   Elle: `pnpm --filter @kartplan/db generate`.
 - Kullanım: `import { getPrisma } from "@kartplan/db"` — modül seviyesinde istemci oluşturma.
 - Modeller ROADMAP'teki taslaktan sprint sprint eklenir; her şema değişikliği migration + seed ile gelir.
+- Prisma 7'de `migrate dev` istemciyi **üretmez**: migration'dan sonra testleri `pnpm test` (turbo,
+  önce `generate` koşar) ile çalıştır ya da `pnpm --filter @kartplan/db generate`.
+- Şema değiştiğinde ROADMAP'teki şema taslağını da güncelle (ROADMAP tek gerçek kaynak).
+- `prisma migrate reset` veritabanını siler; yalnızca kullanıcı açıkça onaylarsa çalıştırılır.
 - DB testleri `DATABASE_URL` yoksa atlanır; yerelde Postgres açıkken çalışır.
 
 ## Motor (`services/engine`) — ayrıntı: docs/adr/0004-engine.md

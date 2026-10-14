@@ -12,18 +12,20 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
+  id            String         @id @default(cuid())
+  email         String         @unique
   emailVerified DateTime? // Auth.js: magic link ile doğrulanınca dolar
   name          String?
   image         String? // Auth.js: Google profil fotoğrafı
-  role          Role      @default(USER)
-  createdAt     DateTime  @default(now())
+  role          Role           @default(USER)
+  createdAt     DateTime       @default(now())
   deletedAt     DateTime? // KVKK: hesap silme talebi; 30 gün sonra kalıcı silinir
   accounts      Account[]
   sessions      Session[]
   consents      Consent[]
-  notifyPrefs   Json      @default("{}")
+  cards         UserCard[]
+  spend         SpendProfile[]
+  notifyPrefs   Json           @default("{}")
 }
 
 enum Role {
@@ -42,6 +44,110 @@ model Consent {
   createdAt DateTime @default(now())
 
   @@index([userId, kind, createdAt])
+}
+
+// --- Katalog (Sprint 1): banka → program → kart ürünü → sabit kazanç oranları ---
+// Katalog admin tarafından yönetilir; kullanıcı yalnızca ürün seçer (kart numarası asla tutulmaz).
+
+model Bank {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  programs Program[]
+}
+
+model Program {
+  id           String        @id @default(cuid())
+  bankId       String
+  bank         Bank          @relation(fields: [bankId], references: [id])
+  slug         String        @unique // "bonus", "world" — veri hattı adaptörleri bununla eşleşir
+  name         String // Bonus, Maximum, World ...
+  pointName    String // Bonus, MaxiPuan, Worldpuan
+  pointValueTL Decimal       @default(1) @db.Decimal(10, 4) // 1 puan = ? TL
+  cards        CardProduct[]
+
+  @@unique([bankId, name])
+}
+
+model CardProduct {
+  id          String     @id @default(cuid())
+  programId   String
+  program     Program    @relation(fields: [programId], references: [id])
+  name        String // Bonus Platinum
+  type        CardType
+  annualFee   Int? // kuruş
+  baseRateBps Int        @default(0) // kampanyasız, tüm harcamalara uygulanan temel oran
+  earnRates   EarnRate[] // kategoriye özel oranlar (temel oranın yerine geçer)
+  userCards   UserCard[]
+
+  @@unique([programId, name])
+}
+
+enum CardType {
+  CREDIT
+  DEBIT
+  VIRTUAL
+}
+
+// Kartın bir kategorideki kampanyasız sabit kazanç oranı (ör. akaryakıtta %1).
+// Kategori için satır yoksa CardProduct.baseRateBps geçerlidir. Kart başına kategori tekildir.
+model EarnRate {
+  id            String      @id @default(cuid())
+  cardProductId String
+  cardProduct   CardProduct @relation(fields: [cardProductId], references: [id], onDelete: Cascade)
+  categoryId    String
+  category      Category    @relation(fields: [categoryId], references: [id])
+  rateBps       Int // baz puan: 50 = %0,5
+
+  @@unique([cardProductId, categoryId])
+}
+
+model Category {
+  id        String         @id @default(cuid())
+  slug      String         @unique // market, akaryakit, e-ticaret
+  name      String
+  parentId  String?
+  parent    Category?      @relation("CategoryTree", fields: [parentId], references: [id])
+  children  Category[]     @relation("CategoryTree")
+  merchants Merchant[]
+  earnRates EarnRate[]
+  spend     SpendProfile[]
+}
+
+model Merchant {
+  id         String   @id @default(cuid())
+  name       String   @unique // Migros, Opet, Trendyol
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@index([categoryId])
+}
+
+// --- Kullanıcı verisi (Sprint 1). Hesap silinince birlikte silinir (KVKK). ---
+
+model UserCard {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardProductId String
+  cardProduct   CardProduct @relation(fields: [cardProductId], references: [id], onDelete: Restrict)
+  nickname      String?
+  limitKurus    Int?
+  statementDay  Int? // hesap kesim günü 1-31 (uygulama katmanında doğrulanır)
+  createdAt     DateTime    @default(now())
+
+  @@index([userId])
+}
+
+model SpendProfile {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId   String
+  category     Category @relation(fields: [categoryId], references: [id])
+  monthlyKurus Int
+  merchantIds  String[] // tercih edilen markalar (Merchant.id)
+
+  @@unique([userId, categoryId])
 }
 
 // --- Auth.js (@auth/prisma-adapter) tabloları; alan adları adaptörün beklediği biçimdedir ---
