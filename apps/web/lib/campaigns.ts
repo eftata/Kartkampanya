@@ -51,6 +51,7 @@ export async function getMyCampaigns(
         program: { select: { name: true, bank: { select: { name: true } } } },
         rules: true,
         cardScope: { select: { cardProductId: true } },
+        userStatus: { where: { userId }, select: { joined: true, inPlan: true } },
       },
     }),
   ]);
@@ -122,6 +123,8 @@ export async function getMyCampaigns(
       joinRequired: campaign.joinMethod !== "AUTO",
       endingSoon: daysLeft(today, endsAt) <= ENDING_SOON_DAYS,
       upcoming: startsAt > today,
+      joined: campaign.userStatus[0]?.joined ?? false,
+      inPlan: campaign.userStatus[0]?.inPlan ?? false,
     });
   }
 

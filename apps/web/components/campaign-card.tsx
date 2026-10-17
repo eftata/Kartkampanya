@@ -1,6 +1,7 @@
 import type { MyCampaignDto } from "@kartplan/shared";
 import { formatKurus } from "@kartplan/shared";
 
+import { JoinToggle } from "@/components/join-toggle";
 import { daysBetween } from "@/lib/campaign-match";
 import { JOIN_METHOD_LABELS, REWARD_LABELS } from "@/lib/campaign-labels";
 import { cn } from "@/lib/utils";
@@ -12,7 +13,13 @@ const dayFormat = new Intl.DateTimeFormat("tr-TR", {
 });
 const formatDay = (day: string) => dayFormat.format(new Date(`${day}T00:00:00Z`));
 
-function Tag({ tone, children }: { tone: "amber" | "red" | "blue"; children: React.ReactNode }) {
+function Tag({
+  tone,
+  children,
+}: {
+  tone: "amber" | "red" | "blue" | "green";
+  children: React.ReactNode;
+}) {
   return (
     <span
       className={cn(
@@ -20,6 +27,7 @@ function Tag({ tone, children }: { tone: "amber" | "red" | "blue"; children: Rea
         tone === "amber" && "bg-amber-500/15 text-amber-800 dark:text-amber-300",
         tone === "red" && "bg-red-500/10 text-red-700 dark:text-red-400",
         tone === "blue" && "bg-sky-500/10 text-sky-700 dark:text-sky-300",
+        tone === "green" && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
       )}
     >
       {children}
@@ -57,7 +65,17 @@ export function CampaignCard({ campaign, today }: { campaign: MyCampaignDto; tod
       </div>
 
       <ul aria-label="Etiketler" className="flex flex-wrap gap-1.5">
-        {campaign.joinRequired && (
+        {campaign.inPlan && (
+          <li>
+            <Tag tone="green">Plana dahil</Tag>
+          </li>
+        )}
+        {campaign.joinRequired && campaign.joined && (
+          <li>
+            <Tag tone="green">Katıldın</Tag>
+          </li>
+        )}
+        {campaign.joinRequired && !campaign.joined && (
           <li>
             <Tag tone="amber">Katılım gerekli · {JOIN_METHOD_LABELS[campaign.joinMethod]}</Tag>
           </li>
@@ -99,15 +117,25 @@ export function CampaignCard({ campaign, today }: { campaign: MyCampaignDto; tod
         </span>
       </div>
 
-      <a
-        href={campaign.sourceUrl}
-        target="_blank"
-        rel="noopener noreferrer nofollow"
-        className="inline-block text-sm font-medium underline underline-offset-4"
-      >
-        Bankanın kampanya sayfası
-        <span className="sr-only"> (yeni sekmede açılır)</span>
-      </a>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <a
+          href={campaign.sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer nofollow"
+          className="inline-block text-sm font-medium underline underline-offset-4"
+        >
+          Bankanın kampanya sayfası
+          <span className="sr-only"> (yeni sekmede açılır)</span>
+        </a>
+        {campaign.joinRequired && (
+          <JoinToggle
+            // Sunucudan yeni durum gelince (ör. başka sekmede değişti) düğme onu göstersin.
+            key={String(campaign.joined)}
+            campaignId={campaign.id}
+            joined={campaign.joined}
+          />
+        )}
+      </div>
     </article>
   );
 }

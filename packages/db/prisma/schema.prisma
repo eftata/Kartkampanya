@@ -27,6 +27,7 @@ model User {
   spend          SpendProfile[]
   notifyPrefs    Json            @default("{}")
   adminAuditLogs AdminAuditLog[]
+  campaignStatus UserCampaignStatus[]
 }
 
 enum Role {
@@ -194,6 +195,7 @@ model Campaign {
   confidence      Float? // LLM güven skoru 0–1 (para değil)
   uncertainFields String[] // LLM'in emin olmadığı alanlar; onay kuyruğunda vurgulanır
   rules           CampaignRule[]
+  userStatus      UserCampaignStatus[]
   lastSeenAt      DateTime        @default(now()) // kaynak listesinde en son görüldüğü an
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -277,6 +279,24 @@ enum PipelineRunStatus {
   RUNNING
   SUCCEEDED
   FAILED
+}
+
+// Kullanıcının kampanyayla ilişkisi (Sprint 3): "Katıldım" işareti ve plana dahil olma.
+// Satır yalnızca kullanıcı bir şey işaretleyince oluşur; yoksa ikisi de false sayılır.
+// Hesap ya da kampanya silinince birlikte silinir (KVKK).
+model UserCampaignStatus {
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaignId    String
+  campaign      Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  joined        Boolean  @default(false) // kullanıcı bankada katıldığını işaretledi
+  joinedAt      DateTime?
+  inPlan        Boolean  @default(false) // aylık plan bu kampanyayı kullanıyor (Sprint 4)
+  progressKurus Int      @default(0) // kampanyaya sayılan harcama (Faz 2: işlem takibi)
+  updatedAt     DateTime @updatedAt
+
+  @@id([userId, campaignId])
+  @@index([campaignId])
 }
 
 // --- Admin işlem kaydı: kim, neyi, ne zaman değiştirdi / doğruladı (güvenlik listesi) ---

@@ -33,6 +33,11 @@ kartla) Sprint 4'ün optimizasyon motorunun işi; burada her kampanya tek başı
   parametrelerle durur (`kart`, `kategori`, `tur`, `sirala`; `lib/campaign-filters.ts`), bilinmeyen
   değerler yok sayılır. Form `next/form` ile seçim değişince istemci tarafında gezinir.
 
+- **İşaretler (`UserCampaignStatus`):** "Katıldım" kullanıcının beyanıdır (banka API'si yok);
+  satır ilk işarette oluşur, `joinedAt` katılım işaretlendiği an. Yalnızca kullanıcıya görünebilen
+  (onaylı ya da süresi dolmuş) kampanyalar işaretlenir; taslak/reddedilen "bulunamadı" döner.
+  `inPlan` plana aittir (Sprint 4). Hesap ya da kampanya silinince işaretler de silinir.
+
 ## Sonuçlar
 
 - Eşleştirme istek anında hesaplanır (kullanıcı başına birkaç sorgu); kampanya sayısı büyürse

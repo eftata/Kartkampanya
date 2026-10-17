@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { AdminCampaignInput, AdminCampaignReview, CampaignRuleInput, DateOnly } from "./campaigns";
+import {
+  AdminCampaignInput,
+  AdminCampaignReview,
+  CampaignRuleInput,
+  CampaignStatusInput,
+  DateOnly,
+} from "./campaigns";
 
 const rule = (overrides: Partial<CampaignRuleInput> = {}): CampaignRuleInput => ({
   categoryIds: ["market"],
@@ -91,5 +97,15 @@ describe("AdminCampaignReview", () => {
       true,
     );
     expect(AdminCampaignReview.safeParse({ action: "publish" }).success).toBe(false);
+  });
+});
+
+describe("CampaignStatusInput", () => {
+  it("en az bir işaret ister, bilinmeyen alanı reddeder", () => {
+    expect(CampaignStatusInput.safeParse({ joined: true }).success).toBe(true);
+    expect(CampaignStatusInput.safeParse({ inPlan: false }).success).toBe(true);
+    expect(firstError(CampaignStatusInput.safeParse({}))).toBe("joined ya da inPlan gönderilmeli.");
+    expect(CampaignStatusInput.safeParse({ joined: "evet" }).success).toBe(false);
+    expect(CampaignStatusInput.safeParse({ joined: true, progressKurus: 5 }).success).toBe(false);
   });
 });

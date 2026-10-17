@@ -123,8 +123,8 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 - [ ] Kalan 3 adaptör; süresi dolan kampanyaları otomatik kapatma — **kapatma tamam**: günlük iş (`python -m engine.pipeline`) taramadan sonra bitiş günü geçmiş (Türkiye takvimi, `endsAt` dahil) onaylı ve taslak kampanyaları `EXPIRED` yapar, reddedilenlere dokunmaz (ADR 0011). Adaptörler bekliyor (banka siteleri bu ortamda engelli)
 - [x] Eşleştirme servisi: kullanıcının kartları × seçtiği kategoriler × aktif kampanyalar — `lib/campaign-match.ts` (saf kurallar: kart kapsamı, ana kategoriye indirgeme, kaba kazanç tahmini) + `lib/campaigns.ts → getMyCampaigns`; API: `GET /api/me/campaigns?card=&category=&type=&sort=ends|gain`; ADR 0014
 - [x] Kampanyalar sayfası: filtre (kart, kategori, fayda tipi), sıralama (bitiş tarihi, tahmini kazanç) — `/kampanyalarim`; filtreler URL'de (`?kart=&kategori=&tur=puan|iade|indirim|taksit&sirala=bitis|kazanc`, `next/form` ile istemci gezinmesi, JS'siz de çalışır); kart/profil yoksa onboarding'e yönlendiren boş durum
-- [ ] Etiketler: "katılım gerekli", "bitmek üzere", "plana dahil" — **ilk ikisi tamam** (katılım yöntemiyle birlikte; ayrıca "Başlangıç: …" ve fayda tipi). "Plana dahil" `UserCampaignStatus.inPlan` ile gelecek
-- [ ] "Katıldım" işaretleme (`UserCampaignStatus`) ve bankanın kampanya sayfasına link
+- [x] Etiketler: "katılım gerekli", "bitmek üzere", "plana dahil" — katılım yöntemiyle birlikte; ayrıca "Katıldın", "Başlangıç: …" ve fayda tipi. "Plana dahil" `UserCampaignStatus.inPlan`'dan okunur; bu alanı Sprint 4'te plan yazacak (şimdilik yalnızca API ile)
+- [x] "Katıldım" işaretleme (`UserCampaignStatus`) ve bankanın kampanya sayfasına link — kampanya kartında "Katıldım olarak işaretle" düğmesi (katılım gerektiren kampanyalarda; anında değişir, hata olursa geri alır) ve "Katıldın" etiketi; API: `PATCH /api/me/campaigns/{id}` (`joined` / `inPlan`); yalnızca onaylı ya da süresi dolmuş kampanyalar işaretlenebilir
 - [ ] Kampanya detay: 3 maddelik sade özet + kaynak bağlantısı
 
 **Kabul:** kullanıcı yalnızca kendi kartlarına ve alanlarına uyan kampanyaları görüyor; 5 programdan veri akıyor.
@@ -193,7 +193,7 @@ model User {
   spend        SpendProfile[]
   consents     Consent[]
   plans        MonthlyPlan[]
-  campaignStat UserCampaignStatus[]
+  campaignStatus UserCampaignStatus[]
   notifyPrefs  Json     @default("{}")
 }
 enum Role { USER ADMIN }
@@ -351,6 +351,7 @@ model Campaign {
   confidence      Float? // LLM güven skoru 0–1 (para değil)
   uncertainFields String[] // LLM'in emin olmadığı alanlar; onay kuyruğunda vurgulanır
   rules           CampaignRule[]
+  userStatus      UserCampaignStatus[]
   lastSeenAt      DateTime        @default(now()) // kaynak listesinde en son görüldüğü an
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -454,18 +455,21 @@ model AdminAuditLog {
   @@index([createdAt])
 }
 
-// --- Sonraki sprintler (taslak; uygulanınca yukarıya taşınır) ---
-
+// Kullanıcının kampanyayla ilişkisi (Sprint 3): "Katıldım" ve plana dahil. Satır ilk işarette oluşur.
 model UserCampaignStatus {
   userId        String
-  user          User     @relation(fields: [userId], references: [id])
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   campaignId    String
-  campaign      Campaign @relation(fields: [campaignId], references: [id])
+  campaign      Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   joined        Boolean  @default(false)
-  inPlan        Boolean  @default(false)
-  progressKurus Int      @default(0)
+  joinedAt      DateTime?
+  inPlan        Boolean  @default(false) // Sprint 4: plan yazar
+  progressKurus Int      @default(0)     // Faz 2: işlem takibi
+  updatedAt     DateTime @updatedAt
   @@id([userId, campaignId])
 }
+
+// --- Sonraki sprintler (taslak; uygulanınca yukarıya taşınır) ---
 
 model MonthlyPlan {
   id            String   @id @default(cuid())

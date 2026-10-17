@@ -73,6 +73,9 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   Elle: `pnpm --filter @kartplan/db generate`.
 - Kullanım: `import { getPrisma } from "@kartplan/db"` — modül seviyesinde istemci oluşturma.
 - Modeller ROADMAP'teki taslaktan sprint sprint eklenir; her şema değişikliği migration + seed ile gelir.
+- Etkileşimsiz ortamda (bulut oturumu, CI) `pnpm db:migrate -- --name` soru bekleyip takılabilir:
+  `pnpm --filter @kartplan/db exec prisma migrate dev --create-only --name <ad> < /dev/null`,
+  SQL'i incele, sonra `pnpm db:deploy` + `pnpm --filter @kartplan/db generate`.
 - Prisma 7'de `migrate dev` istemciyi **üretmez**: migration'dan sonra testleri `pnpm test` (turbo,
   önce `generate` koşar) ile çalıştır ya da `pnpm --filter @kartplan/db generate`.
 - Şema değiştiğinde ROADMAP'teki şema taslağını da güncelle (ROADMAP tek gerçek kaynak).
@@ -151,6 +154,8 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   indirgeme, kaba tahmin), veri `lib/campaigns.ts → getMyCampaigns`. Yalnızca `APPROVED`, bitmemiş,
   katılım süresi geçmemiş; "bugün" `turkeyToday()` (UTC+3). Sayfa `/kampanyalarim`: filtreler URL'de
   (`lib/campaign-filters.ts`), kart `components/campaign-card.tsx`, etiket adları `lib/campaign-labels.ts`.
+  "Katıldım"/plana dahil: `UserCampaignStatus`, `lib/campaign-status.ts` (+ `-actions.ts`,
+  `components/join-toggle.tsx`), API `PATCH /api/me/campaigns/{id}`.
 - Onay kuyruğu (ADR 0012): iş mantığı `lib/admin-campaigns.ts` (`reviewCampaign`: `save` durumu
   değiştirmez, `approve`, `reject`; kurallar ve kart kapsamı bütünüyle değişir). Form durumu metin
   (`lib/campaign-draft.ts` → `draftToInput`), şemalar `packages/shared/src/campaigns.ts`

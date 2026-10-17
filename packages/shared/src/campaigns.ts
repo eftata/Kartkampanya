@@ -157,8 +157,23 @@ export const MyCampaignDto = z.object({
   joinRequired: z.boolean(),
   endingSoon: z.boolean(),
   upcoming: z.boolean(),
+  /** Kullanıcının işaretleri (`UserCampaignStatus`); satır yoksa false. */
+  joined: z.boolean(),
+  inPlan: z.boolean(),
 });
 export type MyCampaignDto = z.infer<typeof MyCampaignDto>;
 
 export const MyCampaignsResponse = z.object({ campaigns: z.array(MyCampaignDto) });
 export type MyCampaignsResponse = z.infer<typeof MyCampaignsResponse>;
+
+/** `PATCH /api/me/campaigns/{id}`: "Katıldım" ve plana dahil işaretleri (en az biri). */
+export const CampaignStatusInput = z
+  .object({ joined: z.boolean().optional(), inPlan: z.boolean().optional() })
+  .strict()
+  .refine((input) => input.joined !== undefined || input.inPlan !== undefined, {
+    message: "joined ya da inPlan gönderilmeli.",
+  });
+export type CampaignStatusInput = z.infer<typeof CampaignStatusInput>;
+
+export const CampaignStatusDto = z.object({ joined: z.boolean(), inPlan: z.boolean() });
+export type CampaignStatusDto = z.infer<typeof CampaignStatusDto>;

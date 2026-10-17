@@ -4,13 +4,18 @@ import { createDraftCampaign, deleteCampaigns, signUp } from "./helpers";
 
 type Banks = { banks: { programs: { slug: string; cards: { id: string }[] }[] }[] };
 type Categories = { categories: { id: string; slug: string }[] };
-type Campaigns = { campaigns: { id: string; upcoming: boolean; cards: { id: string }[] }[] };
+type Campaigns = {
+  campaigns: { id: string; upcoming: boolean; joined: boolean; cards: { id: string }[] }[];
+};
 
 test("kişisel kampanya API'si yalnızca kullanıcının kartına ve alanına uyanları döner", async ({
   page,
   request,
 }) => {
   expect((await request.get("/api/me/campaigns")).status()).toBe(401);
+  expect((await request.patch("/api/me/campaigns/x", { data: { joined: true } })).status()).toBe(
+    401,
+  );
 
   const run = Date.now().toString(36);
   const ids = [
@@ -43,6 +48,16 @@ test("kişisel kampanya API'si yalnızca kullanıcının kartına ve alanına uy
     const mine = ((await res.json()) as Campaigns).campaigns.filter((c) => ids.includes(c.id));
     expect(mine.map((c) => c.id)).toEqual([ids[0]]);
     expect(mine[0]).toMatchObject({ upcoming: true, cards: [{ id: card.id }] });
+
+    // "Katıldım" işareti: doğrulama, taslak kampanya bulunamaz, onaylıda işaret listeye yansır.
+    expect((await api.patch(`/api/me/campaigns/${ids[0]}`, { data: {} })).status()).toBe(400);
+    expect(
+      (await api.patch(`/api/me/campaigns/${ids[2]}`, { data: { joined: true } })).status(),
+    ).toBe(404);
+    const patched = await api.patch(`/api/me/campaigns/${ids[0]}`, { data: { joined: true } });
+    expect(await patched.json()).toEqual({ joined: true, inPlan: false });
+    const after = ((await (await api.get("/api/me/campaigns")).json()) as Campaigns).campaigns;
+    expect(after.find((c) => c.id === ids[0])).toMatchObject({ joined: true });
 
     expect((await api.get("/api/me/campaigns?sort=en-iyi")).status()).toBe(400);
     expect((await api.get("/api/me/campaigns?type=HEDIYE")).status()).toBe(400);
@@ -97,6 +112,19 @@ test("kampanyalar sayfası: etiketler, filtre, sıralama ve temizleme", async ({
       "href",
       /ornek-banka\.test/,
     );
+
+    // Katıldım: etiket değişir, yenilemeden sonra da kalır, geri alınabilir.
+    const join = card.getByRole("button", { name: "Katıldım olarak işaretle" });
+    await join.click();
+    await expect(card.getByRole("button", { name: "✓ Katıldım" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(card.getByRole("list", { name: "Etiketler" })).toContainText("Katıldın");
+    await page.reload();
+    await expect(card.getByRole("list", { name: "Etiketler" })).toContainText("Katıldın");
+    await card.getByRole("button", { name: "✓ Katıldım" }).click();
+    await expect(card.getByRole("list", { name: "Etiketler" })).toContainText("Katılım gerekli");
 
     const filters = page.getByRole("form", { name: "Kampanya filtreleri" });
     await filters.getByLabel("Sırala").selectOption("kazanc");
