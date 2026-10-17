@@ -10,6 +10,9 @@ const ACTION_LABELS: Record<string, string> = {
   "card.update": "Kart güncellendi",
   "card.verify_rates": "Oranlar doğrulandı",
   "card.delete": "Kart silindi",
+  "campaign.update": "Kampanya düzenlendi",
+  "campaign.approve": "Kampanya onaylandı",
+  "campaign.reject": "Kampanya reddedildi",
 };
 
 const dateFormat = new Intl.DateTimeFormat("tr-TR", { dateStyle: "short", timeStyle: "short" });

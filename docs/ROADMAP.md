@@ -114,7 +114,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 - [x] Değişiklik tespiti: metin hash'i aynıysa yeniden ayıklama yapma — `content_hash` (başlık + tarih + boşluk farkları yok sayılan metin), `run_source` (yeni/değişmedi/değişti; değişen yayındaki kampanya DRAFT'a çekilir), `CampaignStore` (psycopg); ADR 0009
 - [x] LLM ayıklama: ham metin → `CampaignRule[]` JSON + güven skoru (şema doğrulamalı) — `extract.py`: Claude API yapılandırılmış çıktı (kategori/marka katalogdan `enum`), pydantic doğrulaması, geçersizse hatalarla bir kez yeniden deneme, ret için sunucu tarafı yedek model; `CampaignStore.load_catalog`; ADR 0010. Kayıt: `run_source` ayıklananları `Campaign` + `CampaignRule` olarak tek işlemde DRAFT yazar (değişen kampanyanın yeni özeti yalnızca ayıklama başarılıysa yazılır, başarısızsa ertesi gün yeniden denenir); günlük iş `python -m engine.pipeline`; ADR 0011
 - [ ] 30 elle etiketlenmiş kampanyalık test seti; ayıklama doğruluğu raporu
-- [ ] Admin onay kuyruğu: ham metin ile ayıklanan kurallar yan yana, düzenle → onayla / reddet
+- [x] Admin onay kuyruğu: ham metin ile ayıklanan kurallar yan yana, düzenle → onayla / reddet — `/admin/kampanyalar` (bekleyen / onaylanan / reddedilen sekmeleri) ve `/admin/kampanyalar/[id]` (LLM'in belirsiz alanları işaretli; kurallar, kart kapsamı, katılım ve tarihler düzenlenir); API: `GET /api/admin/review-queue`, `PUT /api/admin/campaigns/{id}` (`save` / `approve` / `reject`); her karar `AdminAuditLog`'a; ADR 0012
 
 **Kabul:** 2 programdan günlük iş çalışıyor; test setinde eşik ve ödül alanları ≥ %85 doğru; onaylanan kampanya yayına giriyor.
 
@@ -689,7 +689,7 @@ Bir görev ancak aşağıdaki "tamamlandı" tanımını karşılıyorsa kapanır
 - [ ] Gizli anahtarlar yalnızca ortam değişkenlerinde; repoda gizli tarama (gitleaks) CI adımı
 - [ ] Tüm API girdileri zod ile doğrulanıyor; Prisma dışında ham SQL yok
 - [ ] Rate limiting (giriş, magic link, plan hesaplama)
-- [x] Admin rotaları rol kontrolü + işlem kaydı (kim neyi onayladı) — katalog için tamam; Sprint 2 kampanya onayları da aynı kayda yazılmalı
+- [x] Admin rotaları rol kontrolü + işlem kaydı (kim neyi onayladı) — katalog ve kampanya onay/ret/düzenleme işlemleri (`entityType = "Campaign"`)
 - [ ] Güvenlik başlıkları (CSP, HSTS), HTTPS zorunlu
 - [ ] Bağımlılık taraması (Dependabot / Renovate)
 - [ ] Günlük veritabanı yedeği + geri yükleme bir kez denendi

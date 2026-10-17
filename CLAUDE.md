@@ -147,6 +147,11 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   programdaki tüm kartlar), `PipelineRun` (RUNNING → SUCCEEDED/FAILED).
 - Kampanya kapsamındaki kart ürünü ve kampanyası/kaynağı olan program silinemez.
 - Onay/ret işlemleri `AdminAuditLog`'a (`entityType = "Campaign"`) yazılır.
+- Onay kuyruğu (ADR 0012): iş mantığı `lib/admin-campaigns.ts` (`reviewCampaign`: `save` durumu
+  değiştirmez, `approve`, `reject`; kurallar ve kart kapsamı bütünüyle değişir). Form durumu metin
+  (`lib/campaign-draft.ts` → `draftToInput`), şemalar `packages/shared/src/campaigns.ts`
+  (kurallar veri hattının pydantic modeliyle aynı tutulmalı). İşlem kaydı yardımcıları
+  `lib/admin-audit.ts`. e2e'de taslak kampanya: `e2e/helpers.ts → createDraftCampaign`.
 
 ## Veri hattı (`services/engine/engine/pipeline`) — ayrıntı: docs/adr/0008-pipeline-adapters.md
 

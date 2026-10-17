@@ -30,3 +30,55 @@ export async function makeAdmin(email: string): Promise<void> {
     await prisma.$disconnect();
   }
 }
+
+/** Veri hattının yazacağı gibi DRAFT kampanya oluşturur (seed'deki "bonus" programında). */
+export async function createDraftCampaign(title: string): Promise<string> {
+  const prisma = createPrismaClient();
+  try {
+    const program = await prisma.program.findUniqueOrThrow({ where: { slug: "bonus" } });
+    const campaign = await prisma.campaign.create({
+      data: {
+        programId: program.id,
+        title,
+        sourceUrl: `https://ornek-banka.test/e2e/${encodeURIComponent(title)}`,
+        rawText:
+          "SENTETİK: Markette toplam 2.500 TL harcamaya 100 TL puan. En fazla 300 TL. " +
+          "Taksitli işlemler hariçtir.",
+        rawHash: "e2e",
+        summary: ["Markette toplam 2.500 TL harcamaya 100 TL puan"],
+        startsAt: new Date("2099-01-01T00:00:00Z"),
+        endsAt: new Date("2099-01-31T00:00:00Z"),
+        joinMethod: "APP",
+        confidence: 0.62,
+        uncertainFields: ["rules[0].cap_kurus", "merchant:Örnek Market"],
+        rules: {
+          create: [
+            {
+              categoryIds: [],
+              merchantIds: [],
+              thresholdType: "CUMULATIVE",
+              thresholdKurus: 250_000,
+              tierRepeat: true,
+              rewardType: "POINTS",
+              rewardKurus: 10_000,
+              capKurus: 30_000,
+              exclusions: ["taksitli"],
+            },
+          ],
+        },
+      },
+    });
+    return campaign.id;
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+export async function deleteCampaigns(ids: string[]): Promise<void> {
+  const prisma = createPrismaClient();
+  try {
+    await prisma.campaign.deleteMany({ where: { id: { in: ids } } });
+  } finally {
+    await prisma.$disconnect();
+  }
+}

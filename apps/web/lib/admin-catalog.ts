@@ -1,7 +1,6 @@
 import "server-only";
 
 import { getPrisma } from "@kartplan/db";
-import type { Prisma } from "@kartplan/db";
 import type {
   AdminBankInput,
   AdminCardCreateInput,
@@ -10,49 +9,18 @@ import type {
   AdminProgramUpdateInput,
 } from "@kartplan/shared";
 
+import { audit, diff } from "@/lib/admin-audit";
+import type { Actor } from "@/lib/admin-audit";
 import type { MutationResult } from "@/lib/result";
 
-/** İşlemi yapan admin; işlem kaydına yazılır. */
-export type Actor = { id: string; email: string };
-
-type Tx = Prisma.TransactionClient;
-type EntityType = "Bank" | "Program" | "CardProduct";
+export { getAuditLog } from "@/lib/admin-audit";
+export type { Actor } from "@/lib/admin-audit";
 
 const fail = (code: "not_found" | "conflict", error: string) =>
   ({ ok: false, code, error }) as const;
 
 function isUniqueViolation(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
-}
-
-async function audit(
-  tx: Tx,
-  actor: Actor,
-  action: string,
-  entityType: EntityType,
-  entityId: string,
-  data: Record<string, unknown> = {},
-) {
-  await tx.adminAuditLog.create({
-    data: {
-      actorId: actor.id,
-      actorEmail: actor.email,
-      action,
-      entityType,
-      entityId,
-      data: JSON.parse(JSON.stringify(data)) as Prisma.InputJsonValue,
-    },
-  });
-}
-
-/** Önce/sonra farkı: yalnızca değişen alanlar. */
-function diff<T extends Record<string, unknown>>(before: T, after: Partial<T>) {
-  const changes: Record<string, { from: unknown; to: unknown }> = {};
-  for (const [key, to] of Object.entries(after)) {
-    const from = before[key];
-    if (to !== undefined && String(from) !== String(to)) changes[key] = { from, to };
-  }
-  return changes;
 }
 
 /**
@@ -107,17 +75,6 @@ export async function getAdminCard(id: string) {
       earnRates: { include: { category: true }, orderBy: { category: { name: "asc" } } },
       _count: { select: { userCards: true } },
     },
-  });
-}
-
-export async function getAuditLog(
-  filter: { entityType?: EntityType; entityId?: string },
-  take = 20,
-) {
-  return getPrisma().adminAuditLog.findMany({
-    where: filter,
-    orderBy: { createdAt: "desc" },
-    take,
   });
 }
 
