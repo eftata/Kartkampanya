@@ -26,7 +26,8 @@ değil); yine de her e-posta tek tıkla kapatılabilmeli ve aynı bildirim iki k
 - **Hedef kitle:** e-postası doğrulanmış, silinmemiş, kartı olan ve en az bir bildirimi açık
   kullanıcılar. Bir kullanıcının hatası diğerlerini durdurmaz; sayılar yanıtta döner.
 - **Tercihler:** `User.notifyPrefs` (`joinReminder`, `endingSoon`, `weeklySummary`; varsayılan
-  açık, alan alan ayrıştırılır). Tercih ekranı Sprint 5'in sonraki görevi.
+  açık, alan alan ayrıştırılır). Profilim → "E-posta bildirimleri" (`/profil#bildirimler`) ve
+  `GET/PUT /api/me/notifications` (PUT üç tercihi birlikte ister).
 - **Abonelikten çıkma:** her e-postada "bu bildirimleri kapat" ve "tüm bildirimleri kapat"
   bağlantıları + `List-Unsubscribe` / `List-Unsubscribe-Post` (RFC 8058 tek tık). Bağlantılar
   oturum istemez; kullanıcı + tür `AUTH_SECRET` ile HMAC imzalıdır (süresiz). Tarayıcı sayfası

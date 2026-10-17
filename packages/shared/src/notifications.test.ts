@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseNotificationPrefs } from "./notifications";
+import { NotificationPrefsInput, parseNotificationPrefs } from "./notifications";
 
 describe("parseNotificationPrefs", () => {
   it("eksik alanlar açık, kayıtlı olanlar korunur", () => {
@@ -22,5 +22,15 @@ describe("parseNotificationPrefs", () => {
       weeklySummary: false,
     });
     expect(parseNotificationPrefs(null).endingSoon).toBe(true);
+  });
+});
+
+describe("NotificationPrefsInput", () => {
+  it("üç tercih de zorunlu ve boolean", () => {
+    const all = { joinReminder: true, endingSoon: false, weeklySummary: true };
+    expect(NotificationPrefsInput.safeParse(all).success).toBe(true);
+    expect(NotificationPrefsInput.safeParse({ joinReminder: true }).success).toBe(false);
+    expect(NotificationPrefsInput.safeParse({ ...all, marketing: true }).success).toBe(false);
+    expect(NotificationPrefsInput.safeParse({ ...all, endingSoon: "false" }).success).toBe(false);
   });
 });

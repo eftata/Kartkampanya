@@ -79,6 +79,10 @@ test("bildirim işi: katılım hatırlatma e-postası, tek seferlik ve abonelikt
     await expect(page.getByRole("status")).toContainText(
       "Katılım hatırlatma e-postaları kapatıldı",
     );
+    await page.getByRole("link", { name: "Bildirim tercihlerini değiştir" }).click();
+    await expect(
+      page.getByRole("form", { name: "Bildirim tercihleri" }).getByLabel("Katılım hatırlatma"),
+    ).not.toBeChecked();
 
     // Posta istemcisinin tek tıkla çıkışı (POST) ve bozuk imza.
     const oneClick = mail.headers["List-Unsubscribe"]?.[0]?.slice(1, -1) ?? "";
@@ -87,4 +91,36 @@ test("bildirim işi: katılım hatırlatma e-postası, tek seferlik ve abonelikt
   } finally {
     await deleteCampaigns(ids);
   }
+});
+
+test("bildirim tercihleri: Profilim ekranı ve API", async ({ page, request }) => {
+  expect((await request.get("/api/me/notifications")).status()).toBe(401);
+  await signUp(page);
+  const api = page.request;
+  expect(await (await api.get("/api/me/notifications")).json()).toEqual({
+    joinReminder: true,
+    endingSoon: true,
+    weeklySummary: true,
+  });
+
+  await page.goto("/profil");
+  const form = page.getByRole("form", { name: "Bildirim tercihleri" });
+  await form.getByLabel("Haftalık plan özeti").uncheck();
+  await form.getByRole("button", { name: "Tercihleri kaydet" }).click();
+  await expect(form.getByRole("status")).toHaveText("Tercihlerin kaydedildi.");
+  await page.reload();
+  await expect(form.getByLabel("Haftalık plan özeti")).not.toBeChecked();
+  await expect(form.getByLabel("Katılım hatırlatma")).toBeChecked();
+  expect(await (await api.get("/api/me/notifications")).json()).toMatchObject({
+    weeklySummary: false,
+  });
+
+  const all = { joinReminder: false, endingSoon: false, weeklySummary: true };
+  expect((await api.put("/api/me/notifications", { data: all })).status()).toBe(200);
+  expect((await api.put("/api/me/notifications", { data: { joinReminder: false } })).status()).toBe(
+    400,
+  );
+  await page.reload();
+  await expect(form.getByLabel("Katılım hatırlatma")).not.toBeChecked();
+  await expect(form.getByLabel("Haftalık plan özeti")).toBeChecked();
 });

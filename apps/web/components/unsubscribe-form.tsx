@@ -18,7 +18,7 @@ export function UnsubscribeForm({
     return (
       <p role="status" className="space-y-2">
         <span className="block">{label} kapatıldı.</span>
-        <Link href="/profil" className="text-muted-foreground text-sm underline">
+        <Link href="/profil#bildirimler" className="text-muted-foreground text-sm underline">
           Bildirim tercihlerini değiştir
         </Link>
       </p>

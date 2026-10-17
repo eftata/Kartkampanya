@@ -29,3 +29,9 @@ export function parseNotificationPrefs(value: unknown): NotificationPrefs {
     weeklySummary: field("weeklySummary"),
   };
 }
+
+/** `PUT /api/me/notifications`: tercihlerin tamamı (üç alan da zorunlu). */
+export const NotificationPrefsInput = z
+  .object({ joinReminder: z.boolean(), endingSoon: z.boolean(), weeklySummary: z.boolean() })
+  .strict();
+export type NotificationPrefsInput = z.infer<typeof NotificationPrefsInput>;

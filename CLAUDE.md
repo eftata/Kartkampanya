@@ -180,7 +180,8 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   kullanıcı. Seçim saf `pick.ts`, şablonlar saf `templates.ts`, çalıştırıcı `run.ts` (`send` ve
   `userIds` enjekte edilebilir: testler başka kullanıcılara dokunmasın diye `userIds` verir).
 - Tek sefer `NotificationLog` (kullanıcı + tür + anahtar). Tercihler `User.notifyPrefs`
-  (`parseNotificationPrefs`, varsayılan açık). Her e-postada imzalı çıkış bağlantısı
+  (`parseNotificationPrefs`, varsayılan açık); ekran Profilim (`components/notification-prefs-form.tsx`),
+  API `GET/PUT /api/me/notifications`. Her e-postada imzalı çıkış bağlantısı
   (`unsubscribe.ts`, AUTH_SECRET); `/abonelik` GET'te kapatmaz, onay ister; tek tık `POST /api/unsubscribe`.
 - e2e: Mailpit yardımcıları `e2e/mailpit.ts` (`waitForMail`, `countMails`), anahtar `e2e/env.ts`.
 
