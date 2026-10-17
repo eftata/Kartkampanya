@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     # Web sunucusu ile paylaşılan gizli anahtar. Boşsa korumalı uçlar hiçbir isteği kabul etmez.
     engine_token: SecretStr = Field(default=SecretStr(""))
 
+    # Kampanya veri hattı. Üretimde User-Agent'a iletişim adresi eklenmeli (bankalar kimin
+    # taradığını görebilsin). İstekler arası bekleme 2 sn'nin altına indirilemez.
+    pipeline_user_agent: str = "KartPlanBot/0.1"
+    pipeline_min_delay_seconds: float = Field(default=2.0, ge=2.0)
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -110,7 +110,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 ### Sprint 2 — Kampanya veri hattı v1
 
 - [x] Şema: `Campaign`, `CampaignRule`, `CampaignSource`, `PipelineRun` — kart kapsamı `CampaignCard` ara tablosu; ADR 0007
-- [ ] Adaptör arayüzü + ilk 2 adaptör (örn. World ve Bonus): liste sayfası → detay sayfası → ham metin
+- [ ] Adaptör arayüzü + ilk 2 adaptör (örn. World ve Bonus): liste sayfası → detay sayfası → ham metin — **arayüz tamam** (`BankAdapter`, `PoliteFetcher`, tarih/metin yardımcıları; ADR 0008). World ve Bonus adaptörleri bekliyor: geliştirme ortamının ağ politikası banka sitelerini engelliyor, seçiciler gerçek HTML görülmeden yazılmaz.
 - [ ] Değişiklik tespiti: metin hash'i aynıysa yeniden ayıklama yapma
 - [ ] LLM ayıklama: ham metin → `CampaignRule[]` JSON + güven skoru (şema doğrulamalı)
 - [ ] 30 elle etiketlenmiş kampanyalık test seti; ayıklama doğruluğu raporu
@@ -615,11 +615,8 @@ Her banka için küçük bir adaptör yazılır; ortak hat değişiklik tespiti,
 ### Adaptör arayüzü
 
 ```python
-# services/engine/engine/pipeline/adapters/base.py
-from dataclasses import dataclass
-from datetime import date
-
-@dataclass
+# services/engine/engine/pipeline/adapters/base.py (özet)
+@dataclass(frozen=True)
 class RawCampaign:
     source_url: str
     title: str
@@ -627,12 +624,17 @@ class RawCampaign:
     starts_at: date | None
     ends_at: date | None
 
-class BankAdapter:
-    program: str          # "world", "bonus" ...
-    list_url: str
+class BankAdapter(ABC):
+    adapter: ClassVar[str]   # CampaignSource.adapter: "world", "bonus" ...
+    program: ClassVar[str]   # Program.slug
+    list_url: ClassVar[str]
 
-    async def list_urls(self, page) -> list[str]: ...
-    async def fetch(self, page, url: str) -> RawCampaign: ...
+    # Adaptör yalnızca HTML ayrıştırır; ağ işini PoliteFetcher yapar (robots, ≥ 2 sn, User-Agent).
+    def parse_list(self, html: str, base_url: str) -> list[str]: ...
+    def parse_detail(self, html: str, url: str) -> RawCampaign: ...
+
+    async def list_urls(self, fetcher: Fetcher) -> list[str]: ...   # mutlak, tekil, aynı site
+    async def fetch(self, fetcher: Fetcher, url: str) -> RawCampaign: ...
 ```
 
 Kurallar: istekler arası bekleme (≥ 2 sn), günde bir tarama, net bir User-Agent, `robots.txt`'e uyum. Her adaptör için kayıtlı HTML örnekleriyle (fixture) test yazılır; site değişince test kırılır ve fark edilir.

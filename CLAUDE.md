@@ -145,6 +145,18 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
 - Kampanya kapsamındaki kart ürünü ve kampanyası/kaynağı olan program silinemez.
 - Onay/ret işlemleri `AdminAuditLog`'a (`entityType = "Campaign"`) yazılır.
 
+## Veri hattı (`services/engine/engine/pipeline`) — ayrıntı: docs/adr/0008-pipeline-adapters.md
+
+- Adaptör = `BankAdapter` alt sınıfı (`adapters/<ad>.py`, `@register`): yalnızca `parse_list` ve
+  `parse_detail` yazar; ağ işi `PoliteFetcher` (robots.txt, aynı siteye ≥ 2 sn, `PIPELINE_USER_AGENT`).
+  Robots okunamazsa site taranmaz.
+- Metin/tarih: `html_to_text`, `normalize_text`, `find_dates`, `find_date_range` (`pipeline/text.py`).
+- Her adaptör, sitenin **gerçek** sayfalarından kaydedilmiş fixture'larla test edilir
+  (`tests/fixtures/<adaptör>-*.html`). Gerçek HTML görülmeden seçici yazılmaz; sentetik fixture'lar
+  yalnızca taban sınıfı test eder ve dosya başında "SENTETİK" yazar.
+- Bu geliştirme ortamının ağ politikası banka sitelerini engelliyor; fixture'lar izin verilen bir
+  ortamdan kaydedilir.
+
 ## Mimari kurallar
 
 - `apps/web`: iş mantığı `lib/` altında; route dosyaları (`app/**/route.ts`, `page.tsx`) ince kalır.
