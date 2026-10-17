@@ -109,7 +109,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 
 ### Sprint 2 — Kampanya veri hattı v1
 
-- [ ] Şema: `Campaign`, `CampaignRule`, `CampaignSource`, `PipelineRun`
+- [x] Şema: `Campaign`, `CampaignRule`, `CampaignSource`, `PipelineRun` — kart kapsamı `CampaignCard` ara tablosu; ADR 0007
 - [ ] Adaptör arayüzü + ilk 2 adaptör (örn. World ve Bonus): liste sayfası → detay sayfası → ham metin
 - [ ] Değişiklik tespiti: metin hash'i aynıysa yeniden ayıklama yapma
 - [ ] LLM ayıklama: ham metin → `CampaignRule[]` JSON + güven skoru (şema doğrulamalı)
@@ -215,32 +215,35 @@ model Bank {
 }
 
 model Program {
-  id                   String        @id @default(cuid())
+  id                   String           @id @default(cuid())
   bankId               String
-  bank                 Bank          @relation(fields: [bankId], references: [id])
-  slug                 String        @unique // "bonus", "world" — veri hattı adaptörleri bununla eşleşir
+  bank                 Bank             @relation(fields: [bankId], references: [id])
+  slug                 String           @unique // "bonus", "world" — veri hattı adaptörleri bununla eşleşir
   name                 String // Bonus, Maximum, World ...
   pointName            String // Bonus, MaxiPuan, Worldpuan
-  pointValueTL         Decimal       @default(1) @db.Decimal(10, 4) // 1 puan = ? TL
+  pointValueTL         Decimal          @default(1) @db.Decimal(10, 4) // 1 puan = ? TL
   // null = puan değeri doğrulanmadı (seed tahmini); admin kaynaktan doğrulayınca tarih yazılır.
   pointValueVerifiedAt DateTime?
   cards                CardProduct[]
+  campaigns            Campaign[]
+  sources              CampaignSource[]
 
   @@unique([bankId, name])
 }
 
 model CardProduct {
-  id              String     @id @default(cuid())
+  id              String         @id @default(cuid())
   programId       String
-  program         Program    @relation(fields: [programId], references: [id])
+  program         Program        @relation(fields: [programId], references: [id])
   name            String // Bonus Platinum
   type            CardType
   annualFee       Int? // kuruş
-  baseRateBps     Int        @default(0) // kampanyasız, tüm harcamalara uygulanan temel oran
+  baseRateBps     Int            @default(0) // kampanyasız, tüm harcamalara uygulanan temel oran
   earnRates       EarnRate[] // kategoriye özel oranlar (temel oranın yerine geçer)
   // null = baseRateBps ve earnRates doğrulanmadı (seed tahmini); admin doğrulayınca tarih yazılır.
   ratesVerifiedAt DateTime?
   userCards       UserCard[]
+  campaigns       CampaignCard[]
 
   @@unique([programId, name])
 }
@@ -312,6 +315,127 @@ model SpendProfile {
   @@unique([userId, categoryId])
 }
 
+// --- Kampanyalar (Sprint 2): veri hattı DRAFT yazar, admin onaylar (APPROVED) ---
+// Python veri hattı bu tablolara okur/yazar ama şemayı değiştirmez (ADR 0007).
+
+// Bir programın kampanya listesi kaynağı; her banka adaptörü bir kayıttır.
+model CampaignSource {
+  id        String        @id @default(cuid())
+  programId String
+  program   Program       @relation(fields: [programId], references: [id])
+  adapter   String        @unique // services/engine/engine/pipeline/adapters/<adapter>.py
+  listUrl   String
+  active    Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  campaigns Campaign[]
+  runs      PipelineRun[]
+}
+
+model Campaign {
+  id              String          @id @default(cuid())
+  programId       String
+  program         Program         @relation(fields: [programId], references: [id])
+  sourceId        String? // null = admin elle ekledi
+  source          CampaignSource? @relation(fields: [sourceId], references: [id])
+  cardScope       CampaignCard[] // boş = programdaki tüm kartlar
+  title           String
+  sourceUrl       String          @unique
+  rawText         String
+  rawHash         String // sha256(rawText); aynıysa yeniden ayıklanmaz
+  summary         String[] // en fazla 3 sade madde
+  startsAt        DateTime
+  endsAt          DateTime
+  joinMethod      JoinMethod
+  joinDeadline    DateTime?
+  status          CampaignStatus  @default(DRAFT)
+  confidence      Float? // LLM güven skoru 0–1 (para değil)
+  uncertainFields String[] // LLM'in emin olmadığı alanlar; onay kuyruğunda vurgulanır
+  rules           CampaignRule[]
+  lastSeenAt      DateTime        @default(now()) // kaynak listesinde en son görüldüğü an
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([status, endsAt])
+  @@index([programId, status])
+}
+
+enum JoinMethod {
+  AUTO
+  SMS
+  APP
+  WEB
+}
+
+enum CampaignStatus {
+  DRAFT
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+// Kampanyanın geçerli olduğu kart ürünleri. Kampanyaya bağlı kart ürünü silinemez: silinseydi
+// kapsam sessizce boşalıp "tüm kartlar" anlamına gelirdi.
+model CampaignCard {
+  campaignId    String
+  campaign      Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  cardProductId String
+  cardProduct   CardProduct @relation(fields: [cardProductId], references: [id], onDelete: Restrict)
+
+  @@id([campaignId, cardProductId])
+}
+
+model CampaignRule {
+  id             String    @id @default(cuid())
+  campaignId     String
+  campaign       Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  categoryIds    String[] // Category.id; boş = tüm harcamalar
+  merchantIds    String[] // Merchant.id; boş = kategorideki tüm markalar
+  thresholdType  Threshold // SINGLE (tek seferde) | CUMULATIVE (toplam) | TXN_COUNT (işlem adedi)
+  thresholdKurus Int?
+  txnCount       Int?
+  tierRepeat     Boolean   @default(false) // "her 2.500 TL'ye" — eşik tekrarlanır
+  rewardType     Reward
+  rewardKurus    Int? // sabit ödül
+  rewardBps      Int? // oransal ödül
+  capKurus       Int? // üst limit
+  exclusions     String[] // "taksitli", "nakit_avans" ...
+
+  @@index([campaignId])
+}
+
+enum Threshold {
+  SINGLE
+  CUMULATIVE
+  TXN_COUNT
+}
+
+enum Reward {
+  POINTS
+  CASHBACK
+  DISCOUNT
+  INSTALLMENT
+}
+
+model PipelineRun {
+  id         String            @id @default(cuid())
+  sourceId   String
+  source     CampaignSource    @relation(fields: [sourceId], references: [id])
+  status     PipelineRunStatus @default(RUNNING)
+  startedAt  DateTime          @default(now())
+  finishedAt DateTime?
+  found      Int               @default(0) // listede bulunan kampanya
+  changed    Int               @default(0) // yeni ya da metni değişen (yeniden ayıklanan)
+  errors     Json? // [{ url, message }]
+
+  @@index([sourceId, startedAt])
+}
+
+enum PipelineRunStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
 // --- Admin işlem kaydı: kim, neyi, ne zaman değiştirdi / doğruladı (güvenlik listesi) ---
 // Kayıtlar silinmez; admin hesabı silinse bile kalır (actorId boşalır, actorEmail saklanır).
 
@@ -321,7 +445,7 @@ model AdminAuditLog {
   actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
   actorEmail String
   action     String // "bank.create", "card.update", "card.verify_rates" ...
-  entityType String // "Bank" | "Program" | "CardProduct"
+  entityType String // "Bank" | "Program" | "CardProduct" | "Campaign"
   entityId   String
   data       Json     @default("{}") // değişen alanlar (önce/sonra)
   createdAt  DateTime @default(now())
@@ -330,48 +454,7 @@ model AdminAuditLog {
   @@index([createdAt])
 }
 
-model Campaign {
-  id           String         @id @default(cuid())
-  programId    String
-  program      Program        @relation(fields: [programId], references: [id])
-  cardScope    String[]       // boş = programdaki tüm kartlar
-  title        String
-  sourceUrl    String         @unique
-  rawText      String
-  rawHash      String
-  summary      String[]
-  startsAt     DateTime
-  endsAt       DateTime
-  joinMethod   JoinMethod
-  joinDeadline DateTime?
-  status       CampaignStatus @default(DRAFT)
-  confidence   Float?
-  rules        CampaignRule[]
-  userStatus   UserCampaignStatus[]
-  updatedAt    DateTime       @updatedAt
-  @@index([status, endsAt])
-}
-enum JoinMethod { AUTO SMS APP WEB }
-enum CampaignStatus { DRAFT APPROVED REJECTED EXPIRED }
-
-model CampaignRule {
-  id             String    @id @default(cuid())
-  campaignId     String
-  campaign       Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  categoryIds    String[]
-  merchantIds    String[]
-  thresholdType  Threshold // SINGLE (tek sefer) | CUMULATIVE | TXN_COUNT
-  thresholdKurus Int?
-  txnCount       Int?
-  tierRepeat     Boolean   @default(false) // "her 2.500 TL'ye"
-  rewardType     Reward    // POINTS | CASHBACK | DISCOUNT | INSTALLMENT
-  rewardKurus    Int?      // sabit ödül
-  rewardBps      Int?      // oransal ödül
-  capKurus       Int?      // üst limit
-  exclusions     String[]  // "taksitli", "nakit_avans" ...
-}
-enum Threshold { SINGLE CUMULATIVE TXN_COUNT }
-enum Reward { POINTS CASHBACK DISCOUNT INSTALLMENT }
+// --- Sonraki sprintler (taslak; uygulanınca yukarıya taşınır) ---
 
 model UserCampaignStatus {
   userId        String
@@ -395,16 +478,6 @@ model MonthlyPlan {
   realizedKurus Int?
   createdAt     DateTime @default(now())
   @@index([userId, month])
-}
-
-model PipelineRun {
-  id         String    @id @default(cuid())
-  adapter    String
-  startedAt  DateTime  @default(now())
-  finishedAt DateTime?
-  found      Int       @default(0)
-  changed    Int       @default(0)
-  errors     Json?
 }
 ```
 

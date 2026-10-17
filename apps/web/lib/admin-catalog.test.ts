@@ -155,7 +155,30 @@ describe.skipIf(!process.env.DATABASE_URL)("admin katalog (veritabanı)", () => 
     expect(await deleteBank(actor, ids.bank)).toMatchObject({ ok: false, code: "conflict" });
 
     await prisma.userCard.deleteMany({ where: { userId: ids.user } });
+
+    // Kampanya kapsamındaki kart ve kampanyası olan program da silinemez.
+    const campaign = await prisma.campaign.create({
+      data: {
+        programId: ids.program,
+        title: "Test kampanyası",
+        sourceUrl: `https://example.test/kampanya/${run}`,
+        rawText: "metin",
+        rawHash: "hash",
+        startsAt: new Date("2026-11-01"),
+        endsAt: new Date("2026-11-30"),
+        joinMethod: "AUTO",
+        cardScope: { create: [{ cardProductId: ids.card }] },
+      },
+    });
+    expect(await deleteCard(actor, ids.card)).toMatchObject({
+      ok: false,
+      code: "conflict",
+      error: "Bu kart 1 kampanyanın kapsamında; silinemez.",
+    });
+    await prisma.campaignCard.deleteMany({ where: { campaignId: campaign.id } });
     ok(await deleteCard(actor, ids.card));
+    expect(await deleteProgram(actor, ids.program)).toMatchObject({ ok: false, code: "conflict" });
+    await prisma.campaign.delete({ where: { id: campaign.id } });
     ok(await deleteProgram(actor, ids.program));
     ok(await updateBank(actor, ids.bank, { name: `Admin Bankası 2 ${run}` }));
     ok(await deleteBank(actor, ids.bank));

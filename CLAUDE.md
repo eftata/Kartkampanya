@@ -137,6 +137,14 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
 - e2e'de admin: `e2e/helpers.ts → makeAdmin(email)`. Next 16 önceki sayfaları gizli tutar
   (`<Activity>`); sayımlı assertion'larda `filter({ visible: true })` kullan.
 
+## Kampanyalar — ayrıntı: docs/adr/0007-campaign-schema.md
+
+- `CampaignSource` (adaptör başına kaynak, seed'de yok; adaptör ilk çalıştırmada oluşturur),
+  `Campaign` (DRAFT → admin onayı → APPROVED), `CampaignRule`, `CampaignCard` (kart kapsamı; boş =
+  programdaki tüm kartlar), `PipelineRun` (RUNNING → SUCCEEDED/FAILED).
+- Kampanya kapsamındaki kart ürünü ve kampanyası/kaynağı olan program silinemez.
+- Onay/ret işlemleri `AdminAuditLog`'a (`entityType = "Campaign"`) yazılır.
+
 ## Mimari kurallar
 
 - `apps/web`: iş mantığı `lib/` altında; route dosyaları (`app/**/route.ts`, `page.tsx`) ince kalır.

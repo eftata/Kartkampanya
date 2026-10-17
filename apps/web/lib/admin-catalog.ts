@@ -248,10 +248,13 @@ export async function deleteProgram(actor: Actor, id: string): Promise<MutationR
   return getPrisma().$transaction(async (tx) => {
     const program = await tx.program.findUnique({
       where: { id },
-      include: { _count: { select: { cards: true } } },
+      include: { _count: { select: { cards: true, campaigns: true, sources: true } } },
     });
     if (!program) return fail("not_found", "Program bulunamadı.");
     if (program._count.cards > 0) return fail("conflict", "Önce programın kartlarını sil.");
+    if (program._count.campaigns > 0 || program._count.sources > 0) {
+      return fail("conflict", "Programın kampanyaları ya da kampanya kaynağı var; silinemez.");
+    }
     await tx.program.delete({ where: { id } });
     await audit(tx, actor, "program.delete", "Program", id, {
       slug: program.slug,
@@ -364,11 +367,18 @@ export async function deleteCard(actor: Actor, id: string): Promise<MutationResu
   return getPrisma().$transaction(async (tx) => {
     const card = await tx.cardProduct.findUnique({
       where: { id },
-      include: { _count: { select: { userCards: true } } },
+      include: { _count: { select: { userCards: true, campaigns: true } } },
     });
     if (!card) return fail("not_found", "Kart bulunamadı.");
     if (card._count.userCards > 0) {
       return fail("conflict", `Bu kartı ${card._count.userCards} kullanıcı seçmiş; silinemez.`);
+    }
+    // Kampanya kapsamından düşen kart, kapsamı "tüm kartlar"a çevirebilirdi.
+    if (card._count.campaigns > 0) {
+      return fail(
+        "conflict",
+        `Bu kart ${card._count.campaigns} kampanyanın kapsamında; silinemez.`,
+      );
     }
     await tx.cardProduct.delete({ where: { id } });
     await audit(tx, actor, "card.delete", "CardProduct", id, { name: card.name });
