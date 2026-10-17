@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { rejectCampaignAction, saveCampaignAction } from "@/lib/admin-campaign-actions";
 import type { ActionResult } from "@/lib/admin-catalog-actions";
-import { JOIN_METHOD_LABELS, REWARD_LABELS, THRESHOLD_LABELS } from "@/lib/admin-labels";
+import { JOIN_METHOD_LABELS, REWARD_LABELS, THRESHOLD_LABELS } from "@/lib/campaign-labels";
 import { emptyRule } from "@/lib/campaign-draft";
 import type { CampaignDraft, RuleDraft } from "@/lib/campaign-draft";
 import { cn } from "@/lib/utils";

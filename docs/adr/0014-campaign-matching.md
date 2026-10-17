@@ -29,6 +29,10 @@ kartla) Sprint 4'ün optimizasyon motorunun işi; burada her kampanya tek başı
 - **Etiket alanları:** `joinRequired` (katılım AUTO değil), `endingSoon` (son 7 gün), `upcoming`.
   "Plana dahil" etiketi `UserCampaignStatus` ile gelecek.
 
+- **Sayfa:** `/kampanyalarim` sunucuda `getMyCampaigns`'i çağırır; filtreler URL'de Türkçe
+  parametrelerle durur (`kart`, `kategori`, `tur`, `sirala`; `lib/campaign-filters.ts`), bilinmeyen
+  değerler yok sayılır. Form `next/form` ile seçim değişince istemci tarafında gezinir.
+
 ## Sonuçlar
 
 - Eşleştirme istek anında hesaplanır (kullanıcı başına birkaç sorgu); kampanya sayısı büyürse

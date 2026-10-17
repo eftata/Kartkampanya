@@ -50,3 +50,68 @@ test("kişisel kampanya API'si yalnızca kullanıcının kartına ve alanına uy
     await deleteCampaigns(ids);
   }
 });
+
+test("kampanyalar sayfası: etiketler, filtre, sıralama ve temizleme", async ({ page }) => {
+  const run = Date.now().toString(36);
+  const points = `E2E puan ${run}`;
+  const cashback = `E2E iade ${run}`;
+  const ids = [
+    await createDraftCampaign(points, { status: "APPROVED", categorySlug: "market" }),
+    await createDraftCampaign(cashback, {
+      status: "APPROVED",
+      categorySlug: "market",
+      rewardType: "CASHBACK",
+      rewardKurus: 5_000,
+    }),
+    await createDraftCampaign(`E2E giyim ${run}`, { status: "APPROVED", categorySlug: "giyim" }),
+  ];
+  try {
+    await signUp(page);
+    await page.goto("/kampanyalarim");
+    await expect(page.getByRole("link", { name: "Kartlarını ekle" })).toBeVisible();
+
+    const api = page.request;
+    const { banks } = (await (await api.get("/api/catalog/banks")).json()) as Banks;
+    const bonus = banks.flatMap((b) => b.programs).find((p) => p.slug === "bonus")!;
+    await api.post("/api/me/cards", { data: { cardProductId: bonus.cards[0]!.id } });
+    const { categories } = (await (await api.get("/api/catalog/categories")).json()) as Categories;
+    const market = categories.find((c) => c.slug === "market")!;
+    await api.put("/api/me/spend-profile", {
+      data: { items: [{ categoryId: market.id, monthlyKurus: 400_000 }] },
+    });
+
+    await page.goto("/kampanyalarim");
+    // Paralel testlerin kampanyaları da görünebilir: yalnızca bu testinkiler sayılır.
+    const mine = page.getByRole("article").filter({ visible: true }).filter({ hasText: run });
+    const titles = mine.getByRole("heading");
+    await expect(titles).toHaveText([cashback, points]); // aynı bitiş: başlığa göre
+    await expect(page.getByText(`E2E giyim ${run}`)).toHaveCount(0);
+
+    const card = mine.filter({ hasText: points });
+    await expect(card.getByRole("list", { name: "Etiketler" })).toContainText(
+      "Katılım gerekli · Mobil uygulamadan",
+    );
+    await expect(card.getByRole("list", { name: "Etiketler" })).toContainText("Başlangıç:");
+    await expect(card).toContainText("~₺100");
+    await expect(card.getByRole("link", { name: /Bankanın kampanya sayfası/ })).toHaveAttribute(
+      "href",
+      /ornek-banka\.test/,
+    );
+
+    const filters = page.getByRole("form", { name: "Kampanya filtreleri" });
+    await filters.getByLabel("Sırala").selectOption("kazanc");
+    await expect(page).toHaveURL(/sirala=kazanc/);
+    await expect(titles).toHaveText([points, cashback]); // ₺100 > ₺50
+
+    await filters.getByLabel("Fayda").selectOption("iade");
+    await expect(page).toHaveURL(/tur=iade/);
+    await expect(titles).toHaveText([cashback]);
+
+    await page.getByRole("link", { name: "Filtreleri temizle" }).click();
+    await expect(page).toHaveURL("/kampanyalarim");
+    await expect(titles).toHaveText([cashback, points]);
+    await expect(filters.getByLabel("Fayda")).toHaveValue("");
+  } finally {
+    await deleteCampaigns(ids);
+  }
+});

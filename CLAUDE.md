@@ -149,7 +149,8 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
 - Onay/ret işlemleri `AdminAuditLog`'a (`entityType = "Campaign"`) yazılır.
 - Kişisel liste (ADR 0014): kurallar `lib/campaign-match.ts` (saf; kart kapsamı, ana kategoriye
   indirgeme, kaba tahmin), veri `lib/campaigns.ts → getMyCampaigns`. Yalnızca `APPROVED`, bitmemiş,
-  katılım süresi geçmemiş; "bugün" `turkeyToday()` (UTC+3).
+  katılım süresi geçmemiş; "bugün" `turkeyToday()` (UTC+3). Sayfa `/kampanyalarim`: filtreler URL'de
+  (`lib/campaign-filters.ts`), kart `components/campaign-card.tsx`, etiket adları `lib/campaign-labels.ts`.
 - Onay kuyruğu (ADR 0012): iş mantığı `lib/admin-campaigns.ts` (`reviewCampaign`: `save` durumu
   değiştirmez, `approve`, `reject`; kurallar ve kart kapsamı bütünüyle değişir). Form durumu metin
   (`lib/campaign-draft.ts` → `draftToInput`), şemalar `packages/shared/src/campaigns.ts`

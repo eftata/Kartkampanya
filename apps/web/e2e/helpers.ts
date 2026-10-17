@@ -34,7 +34,12 @@ export async function makeAdmin(email: string): Promise<void> {
 /** Veri hattının yazacağı gibi kampanya oluşturur (seed'deki "bonus" programında; varsayılan DRAFT). */
 export async function createDraftCampaign(
   title: string,
-  options: { status?: "DRAFT" | "APPROVED"; categorySlug?: string } = {},
+  options: {
+    status?: "DRAFT" | "APPROVED";
+    categorySlug?: string;
+    rewardType?: "POINTS" | "CASHBACK";
+    rewardKurus?: number;
+  } = {},
 ): Promise<string> {
   const prisma = createPrismaClient();
   try {
@@ -66,8 +71,8 @@ export async function createDraftCampaign(
               thresholdType: "CUMULATIVE",
               thresholdKurus: 250_000,
               tierRepeat: true,
-              rewardType: "POINTS",
-              rewardKurus: 10_000,
+              rewardType: options.rewardType ?? "POINTS",
+              rewardKurus: options.rewardKurus ?? 10_000,
               capKurus: 30_000,
               exclusions: ["taksitli"],
             },

@@ -122,8 +122,8 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 
 - [ ] Kalan 3 adaptör; süresi dolan kampanyaları otomatik kapatma — **kapatma tamam**: günlük iş (`python -m engine.pipeline`) taramadan sonra bitiş günü geçmiş (Türkiye takvimi, `endsAt` dahil) onaylı ve taslak kampanyaları `EXPIRED` yapar, reddedilenlere dokunmaz (ADR 0011). Adaptörler bekliyor (banka siteleri bu ortamda engelli)
 - [x] Eşleştirme servisi: kullanıcının kartları × seçtiği kategoriler × aktif kampanyalar — `lib/campaign-match.ts` (saf kurallar: kart kapsamı, ana kategoriye indirgeme, kaba kazanç tahmini) + `lib/campaigns.ts → getMyCampaigns`; API: `GET /api/me/campaigns?card=&category=&type=&sort=ends|gain`; ADR 0014
-- [ ] Kampanyalar sayfası: filtre (kart, kategori, fayda tipi), sıralama (bitiş tarihi, tahmini kazanç)
-- [ ] Etiketler: "katılım gerekli", "bitmek üzere", "plana dahil"
+- [x] Kampanyalar sayfası: filtre (kart, kategori, fayda tipi), sıralama (bitiş tarihi, tahmini kazanç) — `/kampanyalarim`; filtreler URL'de (`?kart=&kategori=&tur=puan|iade|indirim|taksit&sirala=bitis|kazanc`, `next/form` ile istemci gezinmesi, JS'siz de çalışır); kart/profil yoksa onboarding'e yönlendiren boş durum
+- [ ] Etiketler: "katılım gerekli", "bitmek üzere", "plana dahil" — **ilk ikisi tamam** (katılım yöntemiyle birlikte; ayrıca "Başlangıç: …" ve fayda tipi). "Plana dahil" `UserCampaignStatus.inPlan` ile gelecek
 - [ ] "Katıldım" işaretleme (`UserCampaignStatus`) ve bankanın kampanya sayfasına link
 - [ ] Kampanya detay: 3 maddelik sade özet + kaynak bağlantısı
 
