@@ -125,7 +125,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 - [x] Kampanyalar sayfası: filtre (kart, kategori, fayda tipi), sıralama (bitiş tarihi, tahmini kazanç) — `/kampanyalarim`; filtreler URL'de (`?kart=&kategori=&tur=puan|iade|indirim|taksit&sirala=bitis|kazanc`, `next/form` ile istemci gezinmesi, JS'siz de çalışır); kart/profil yoksa onboarding'e yönlendiren boş durum
 - [x] Etiketler: "katılım gerekli", "bitmek üzere", "plana dahil" — katılım yöntemiyle birlikte; ayrıca "Katıldın", "Başlangıç: …" ve fayda tipi. "Plana dahil" `UserCampaignStatus.inPlan`'dan okunur; bu alanı Sprint 4'te plan yazacak (şimdilik yalnızca API ile)
 - [x] "Katıldım" işaretleme (`UserCampaignStatus`) ve bankanın kampanya sayfasına link — kampanya kartında "Katıldım olarak işaretle" düğmesi (katılım gerektiren kampanyalarda; anında değişir, hata olursa geri alır) ve "Katıldın" etiketi; API: `PATCH /api/me/campaigns/{id}` (`joined` / `inPlan`); yalnızca onaylı ya da süresi dolmuş kampanyalar işaretlenebilir
-- [ ] Kampanya detay: 3 maddelik sade özet + kaynak bağlantısı
+- [x] Kampanya detay: 3 maddelik sade özet + kaynak bağlantısı — `/kampanyalarim/[id]`: özet (yoksa kuralların sade hali), koşullar sade Türkçe (`lib/campaign-describe.ts`: eşik, ödül, kapsam, üst limit, hariçler), geçerli kartlar, tarihler ve "Katıldım", kullanıcıya uyup uymadığı ve tahmin, bankanın sayfası + son görülme tarihi. Onaylı ve süresi dolmuş kampanyalar açılır; taslak/reddedilen 404
 
 **Kabul:** kullanıcı yalnızca kendi kartlarına ve alanlarına uyan kampanyaları görüyor; 5 programdan veri akıyor.
 

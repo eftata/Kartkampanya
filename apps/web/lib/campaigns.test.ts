@@ -2,7 +2,7 @@ import { createPrismaClient } from "@kartplan/db";
 import type { PrismaClient } from "@kartplan/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { getMyCampaigns } from "./campaigns";
+import { getMyCampaignDetail, getMyCampaigns } from "./campaigns";
 
 // Gerçek veritabanı gerektirir: `docker compose up -d` + `pnpm db:deploy`.
 describe.skipIf(!process.env.DATABASE_URL)("kişisel kampanya eşleştirme (veritabanı)", () => {
@@ -189,5 +189,24 @@ describe.skipIf(!process.env.DATABASE_URL)("kişisel kampanya eşleştirme (veri
     } finally {
       await prisma.user.delete({ where: { id: other.id } });
     }
+  });
+
+  it("detay: uyan, uymayan, süresi geçmiş ve taslak kampanya", async () => {
+    const match = await getMyCampaignDetail(ids.user, campaigns["kapsamli"]!, TODAY);
+    expect(match).toMatchObject({ matches: true, expired: false, scopeCards: ["Kart 0"] });
+    expect(match?.campaign.cards).toEqual([{ id: ids.userCard, name: "Ana kartım" }]);
+    expect(match?.rules[0]).toMatchObject({ categoryNames: ["Market"], merchantNames: [] });
+
+    const other = await getMyCampaignDetail(ids.user, campaigns["baska-alan"]!, TODAY);
+    expect(other).toMatchObject({ matches: false, expired: false, scopeCards: [] });
+    expect(other?.campaign).toMatchObject({ cards: [], estimateKurus: 0, rewardTypes: ["POINTS"] });
+    expect(other?.rules[0]?.categoryNames).toEqual(["Giyim"]);
+
+    expect(await getMyCampaignDetail(ids.user, campaigns["bitmis"]!, TODAY)).toMatchObject({
+      matches: false,
+      expired: true,
+    });
+    expect(await getMyCampaignDetail(ids.user, campaigns["taslak"]!, TODAY)).toBeNull();
+    expect(await getMyCampaignDetail(ids.user, "yok", TODAY)).toBeNull();
   });
 });

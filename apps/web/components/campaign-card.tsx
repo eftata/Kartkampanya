@@ -1,5 +1,6 @@
 import type { MyCampaignDto } from "@kartplan/shared";
 import { formatKurus } from "@kartplan/shared";
+import Link from "next/link";
 
 import { JoinToggle } from "@/components/join-toggle";
 import { daysBetween } from "@/lib/campaign-match";
@@ -11,7 +12,7 @@ const dayFormat = new Intl.DateTimeFormat("tr-TR", {
   month: "short",
   timeZone: "UTC",
 });
-const formatDay = (day: string) => dayFormat.format(new Date(`${day}T00:00:00Z`));
+export const formatDay = (day: string) => dayFormat.format(new Date(`${day}T00:00:00Z`));
 
 function Tag({
   tone,
@@ -35,6 +36,44 @@ function Tag({
   );
 }
 
+/** Kampanya etiketleri: plana dahil, katılım, bitmek üzere, başlangıç, fayda tipleri. */
+export function CampaignTags({ campaign }: { campaign: MyCampaignDto }) {
+  return (
+    <ul aria-label="Etiketler" className="flex flex-wrap gap-1.5">
+      {campaign.inPlan && (
+        <li>
+          <Tag tone="green">Plana dahil</Tag>
+        </li>
+      )}
+      {campaign.joinRequired && campaign.joined && (
+        <li>
+          <Tag tone="green">Katıldın</Tag>
+        </li>
+      )}
+      {campaign.joinRequired && !campaign.joined && (
+        <li>
+          <Tag tone="amber">Katılım gerekli · {JOIN_METHOD_LABELS[campaign.joinMethod]}</Tag>
+        </li>
+      )}
+      {campaign.endingSoon && (
+        <li>
+          <Tag tone="red">Bitmek üzere</Tag>
+        </li>
+      )}
+      {campaign.upcoming && (
+        <li>
+          <Tag tone="blue">Başlangıç: {formatDay(campaign.startsAt)}</Tag>
+        </li>
+      )}
+      {campaign.rewardTypes.map((type) => (
+        <li key={type}>
+          <span className="bg-muted rounded-full px-2 py-0.5 text-xs">{REWARD_LABELS[type]}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /** Kampanya listesi öğesi: etiketler, tarih, sade özet, uyan kartlar ve kaynak bağlantısı. */
 export function CampaignCard({ campaign, today }: { campaign: MyCampaignDto; today: string }) {
   const daysLeft = daysBetween(today, campaign.endsAt);
@@ -50,7 +89,12 @@ export function CampaignCard({ campaign, today }: { campaign: MyCampaignDto; tod
             {campaign.bankName} · {campaign.programName}
           </p>
           <h2 id={`campaign-${campaign.id}`} className="font-semibold">
-            {campaign.title}
+            <Link
+              href={`/kampanyalarim/${campaign.id}`}
+              className="underline-offset-4 hover:underline"
+            >
+              {campaign.title}
+            </Link>
           </h2>
         </div>
         {campaign.estimateKurus > 0 && (
@@ -64,38 +108,7 @@ export function CampaignCard({ campaign, today }: { campaign: MyCampaignDto; tod
         )}
       </div>
 
-      <ul aria-label="Etiketler" className="flex flex-wrap gap-1.5">
-        {campaign.inPlan && (
-          <li>
-            <Tag tone="green">Plana dahil</Tag>
-          </li>
-        )}
-        {campaign.joinRequired && campaign.joined && (
-          <li>
-            <Tag tone="green">Katıldın</Tag>
-          </li>
-        )}
-        {campaign.joinRequired && !campaign.joined && (
-          <li>
-            <Tag tone="amber">Katılım gerekli · {JOIN_METHOD_LABELS[campaign.joinMethod]}</Tag>
-          </li>
-        )}
-        {campaign.endingSoon && (
-          <li>
-            <Tag tone="red">Bitmek üzere</Tag>
-          </li>
-        )}
-        {campaign.upcoming && (
-          <li>
-            <Tag tone="blue">Başlangıç: {formatDay(campaign.startsAt)}</Tag>
-          </li>
-        )}
-        {campaign.rewardTypes.map((type) => (
-          <li key={type}>
-            <span className="bg-muted rounded-full px-2 py-0.5 text-xs">{REWARD_LABELS[type]}</span>
-          </li>
-        ))}
-      </ul>
+      <CampaignTags campaign={campaign} />
 
       {campaign.summary.length > 0 && (
         <ul className="list-disc space-y-0.5 pl-5 text-sm">

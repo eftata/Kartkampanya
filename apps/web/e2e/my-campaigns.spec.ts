@@ -143,3 +143,58 @@ test("kampanyalar sayfası: etiketler, filtre, sıralama ve temizleme", async ({
     await deleteCampaigns(ids);
   }
 });
+
+test("kampanya detayı: özet, sade koşullar, katılım ve kaynak", async ({ page }) => {
+  const run = Date.now().toString(36);
+  const title = `E2E detay ${run}`;
+  const ids = [
+    await createDraftCampaign(title, { status: "APPROVED", categorySlug: "market" }),
+    await createDraftCampaign(`E2E detay taslak ${run}`, { categorySlug: "market" }),
+  ];
+  try {
+    await signUp(page);
+    const api = page.request;
+    const { banks } = (await (await api.get("/api/catalog/banks")).json()) as Banks;
+    const bonus = banks.flatMap((b) => b.programs).find((p) => p.slug === "bonus")!;
+    await api.post("/api/me/cards", { data: { cardProductId: bonus.cards[0]!.id } });
+    const { categories } = (await (await api.get("/api/catalog/categories")).json()) as Categories;
+    const market = categories.find((c) => c.slug === "market")!;
+    await api.put("/api/me/spend-profile", {
+      data: { items: [{ categoryId: market.id, monthlyKurus: 400_000 }] },
+    });
+
+    await page.goto("/kampanyalarim");
+    await page.getByRole("link", { name: title }).click();
+    await expect(page).toHaveURL(`/kampanyalarim/${ids[0]}`);
+    await expect(page.getByRole("heading", { name: title, level: 1 })).toBeVisible();
+
+    await expect(page.getByRole("region", { name: "Özet" })).toContainText(
+      "Markette toplam 2.500 TL harcamaya 100 TL puan",
+    );
+    const terms = page.getByRole("region", { name: "Koşullar" });
+    await expect(terms).toContainText("Her ₺2.500 harcamaya ₺100 puan");
+    await expect(terms).toContainText("Geçerli: Market");
+    await expect(terms).toContainText("En fazla ₺300");
+    await expect(terms).toContainText("Hariç: taksitli işlemler");
+    await expect(terms).toContainText("Bonus programındaki tüm kartlar");
+
+    const forYou = page.getByRole("region", { name: "Senin için" });
+    await expect(forYou).toContainText("Harcama alanların: Market");
+    await expect(forYou).toContainText("~₺100");
+
+    const dates = page.getByRole("region", { name: "Tarihler ve katılım" });
+    await expect(dates).toContainText("Katılım: Mobil uygulamadan");
+    await dates.getByRole("button", { name: "Katıldım olarak işaretle" }).click();
+    await expect(page.getByRole("list", { name: "Etiketler" })).toContainText("Katıldın");
+
+    await expect(
+      page.getByRole("region", { name: "Kaynak" }).getByRole("link", { name: /Bankanın/ }),
+    ).toHaveAttribute("href", /ornek-banka\.test/);
+
+    // Taslak kampanyanın varlığı sızmaz.
+    await page.goto(`/kampanyalarim/${ids[1]}`);
+    await expect(page.getByRole("heading", { name: "Sayfa bulunamadı" })).toBeVisible();
+  } finally {
+    await deleteCampaigns(ids);
+  }
+});

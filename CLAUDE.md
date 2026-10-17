@@ -155,7 +155,8 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   katılım süresi geçmemiş; "bugün" `turkeyToday()` (UTC+3). Sayfa `/kampanyalarim`: filtreler URL'de
   (`lib/campaign-filters.ts`), kart `components/campaign-card.tsx`, etiket adları `lib/campaign-labels.ts`.
   "Katıldım"/plana dahil: `UserCampaignStatus`, `lib/campaign-status.ts` (+ `-actions.ts`,
-  `components/join-toggle.tsx`), API `PATCH /api/me/campaigns/{id}`.
+  `components/join-toggle.tsx`), API `PATCH /api/me/campaigns/{id}`. Detay `/kampanyalarim/[id]`
+  (`getMyCampaignDetail`; kurallar sade Türkçe `lib/campaign-describe.ts`).
 - Onay kuyruğu (ADR 0012): iş mantığı `lib/admin-campaigns.ts` (`reviewCampaign`: `save` durumu
   değiştirmez, `approve`, `reject`; kurallar ve kart kapsamı bütünüyle değişir). Form durumu metin
   (`lib/campaign-draft.ts` → `draftToInput`), şemalar `packages/shared/src/campaigns.ts`

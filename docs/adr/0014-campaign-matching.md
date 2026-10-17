@@ -38,6 +38,11 @@ kartla) Sprint 4'ün optimizasyon motorunun işi; burada her kampanya tek başı
   (onaylı ya da süresi dolmuş) kampanyalar işaretlenir; taslak/reddedilen "bulunamadı" döner.
   `inPlan` plana aittir (Sprint 4). Hesap ya da kampanya silinince işaretler de silinir.
 
+- **Detay:** `getMyCampaignDetail` aynı eşleştirmeyi tek kampanyaya uygular; uymayan ya da süresi
+  dolmuş kampanya da açılır (plan ve paylaşılan bağlantılar için) ve bu durum sayfada söylenir.
+  Kurallar `lib/campaign-describe.ts` ile sade Türkçeye çevrilir; Türkçe ek uyumu sayıya göre
+  değiştiği için ek isteyen kalıplardan kaçınılır ("₺2.500 harcamaya").
+
 ## Sonuçlar
 
 - Eşleştirme istek anında hesaplanır (kullanıcı başına birkaç sorgu); kampanya sayısı büyürse
