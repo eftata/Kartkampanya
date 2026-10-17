@@ -17,6 +17,11 @@ istiyordu.
   doğrulandıktan sonra çizer; admin sayfaları başlık (`metadata.title`) taşımaz, çünkü statik
   iskelete girip bölümün varlığını gösterirdi. Rol her istekte veritabanından okunur (veritabanı
   oturumları), yetki değişikliği hemen geçerlidir.
+- **Her sayfa kendi kapısını taşır:** layout'taki kapı sayfa bölümünü dinamik yapmaz; Next sayfayı
+  build'de ayrıca önceden render eder (ilk sürümde `/admin/katalog` build'de veritabanını sorguladı
+  ve yer tutucu sayfa içeriği statik RSC parçasına girdi). Bu yüzden her admin sayfası içeriğini
+  kendi `<Suspense>`'i içinde `await requireAdmin()` ile başlatır; oturum okuması sayfayı dinamik
+  yapar, build'de ne sorgu çalışır ne de içerik statik çıktıya girer.
 - **İşlem kaydı:** `AdminAuditLog` (aktör, aktör e-postası, işlem, varlık, önce/sonra farkı). Her
   katalog değişikliği ile kaydı aynı transaction'da yazılır. Admin hesabı silinse de kayıt kalır.
 - **Doğrulama kuralı:** `verified: true` → doğrulama tarihi yazılır (değer değişmediyse eski tarih

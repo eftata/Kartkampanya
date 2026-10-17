@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { ActionForm } from "@/components/admin/action-form";
 import { AuditList } from "@/components/admin/audit-list";
 import { Checkbox, Field, inputClass, VerifiedBadge } from "@/components/admin/fields";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireAdmin } from "@/lib/auth/session";
 import { getAdminCatalog, getAuditLog } from "@/lib/admin-catalog";
 import {
   createBankAction,
@@ -12,7 +14,8 @@ import {
   updateBankAction,
 } from "@/lib/admin-catalog-actions";
 
-export default async function AdminCatalogPage() {
+async function AdminCatalog() {
+  await requireAdmin();
   const [banks, audit] = await Promise.all([getAdminCatalog(), getAuditLog({}, 15)]);
   const programs = banks.flatMap((b) => b.programs);
   const cards = programs.flatMap((p) => p.cards);
@@ -181,5 +184,14 @@ export default async function AdminCatalogPage() {
 
       <AuditList entries={audit} />
     </div>
+  );
+}
+
+/** Yetki kontrolü sayfanın kendisinde: içerik build sırasında önceden üretilmez (ADR 0006). */
+export default function Page() {
+  return (
+    <Suspense fallback={<div className="bg-muted h-64 animate-pulse rounded-xl" />}>
+      <AdminCatalog />
+    </Suspense>
   );
 }

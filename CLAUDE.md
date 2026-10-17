@@ -99,6 +99,9 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   (Postgres + Mailpit servisleriyle Playwright), engine (ruff, mypy, pytest), engine Docker imajı
   (build + duman testi), gitleaks (tüm geçmiş). Action'lar commit SHA'sına sabitli; güncellerken
   SHA'yı ve yanındaki sürüm yorumunu birlikte değiştir. Yerelde: `actionlint`.
+- Yerel `pnpm build` kök `.env`'yi okuduğu için veritabanına erişir; CI build'i erişemez. Sayfa
+  build'de veri okuyorsa yalnızca CI'da kırılır. CI koşulunu denemek için `.env`'siz temiz bir
+  klonda `pnpm build`.
 - Turbo **strict env** modunda: build sırasında okunan her ortam değişkeni `turbo.json` →
   `tasks.build.env` listesine eklenmeli (yoksa build onu görmez). Şu an: `AUTH_GOOGLE_ID/SECRET`.
 - Staging: web → Vercel (`apps/web`), Postgres + motor → Railway. Migration'lar Vercel build
@@ -120,8 +123,10 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
 
 ## Admin — ayrıntı: docs/adr/0006-admin-catalog.md
 
-- Rol: `requireAdmin()` (sayfa/action; admin değilse 404), `withAdmin()` (API; 401/403). Admin
-  layout'u başlık dahil her şeyi rol doğrulandıktan sonra çizer; admin sayfaları `metadata` başlığı
+- Rol: `requireAdmin()` (sayfa/action; admin değilse 404), `withAdmin()` (API; 401/403). **Her admin
+  sayfası** içeriğini kendi `<Suspense>`'i içinde `await requireAdmin()` ile başlatır: layout'taki
+  kapı sayfayı dinamik yapmaz, Next sayfayı build'de önceden render eder (DB sorgusu + statik
+  çıktıya sızma). Admin layout'u da başlık dahil her şeyi rol doğrulandıktan sonra çizer; admin sayfaları `metadata` başlığı
   taşımaz (statik iskelette admin izi kalmasın). İlk admin: `SEED_ADMIN_EMAIL` + `pnpm db:seed`.
 - Katalog değişiklikleri `lib/admin-catalog.ts` üzerinden, her biri transaction içinde
   `AdminAuditLog`'a yazılır (`actorEmail`, önce/sonra farkı). Yeni admin işlemi de kayıt yazmalı.

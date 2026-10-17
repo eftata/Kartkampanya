@@ -1,12 +1,14 @@
 import { formatBps } from "@kartplan/shared";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { ActionForm } from "@/components/admin/action-form";
 import { AuditList } from "@/components/admin/audit-list";
 import { Checkbox, Field, inputClass, VerifiedBadge } from "@/components/admin/fields";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAdminProgram, getAuditLog } from "@/lib/admin-catalog";
+import { requireAdmin } from "@/lib/auth/session";
 import {
   createCardAction,
   deleteProgramAction,
@@ -14,9 +16,8 @@ import {
 } from "@/lib/admin-catalog-actions";
 import { CARD_TYPE_LABELS } from "@/lib/admin-labels";
 
-export default async function AdminProgramPage({
-  params,
-}: PageProps<"/admin/katalog/program/[id]">) {
+async function AdminProgram({ params }: PageProps<"/admin/katalog/program/[id]">) {
+  await requireAdmin();
   const { id } = await params;
   const [program, audit] = await Promise.all([
     getAdminProgram(id),
@@ -202,5 +203,14 @@ export default async function AdminProgramPage({
 
       <AuditList entries={audit} title="Programın işlem geçmişi" />
     </div>
+  );
+}
+
+/** Yetki kontrolü sayfanın kendisinde: içerik build sırasında önceden üretilmez (ADR 0006). */
+export default function Page(props: PageProps<"/admin/katalog/program/[id]">) {
+  return (
+    <Suspense fallback={<div className="bg-muted h-64 animate-pulse rounded-xl" />}>
+      <AdminProgram {...props} />
+    </Suspense>
   );
 }

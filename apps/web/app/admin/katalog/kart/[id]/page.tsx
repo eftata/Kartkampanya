@@ -1,12 +1,14 @@
 import { formatBps, formatKurus } from "@kartplan/shared";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { ActionForm } from "@/components/admin/action-form";
 import { AuditList } from "@/components/admin/audit-list";
 import { Checkbox, Field, inputClass, VerifiedBadge } from "@/components/admin/fields";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAdminCard, getAuditLog } from "@/lib/admin-catalog";
+import { requireAdmin } from "@/lib/auth/session";
 import { deleteCardAction, updateCardAction } from "@/lib/admin-catalog-actions";
 import { CARD_TYPE_LABELS } from "@/lib/admin-labels";
 import { getSpendCategories } from "@/lib/spend-profile";
@@ -14,7 +16,8 @@ import { getSpendCategories } from "@/lib/spend-profile";
 const percentText = (bps: number | undefined) =>
   bps === undefined ? "" : formatBps(bps).replace("%", "");
 
-export default async function AdminCardPage({ params }: PageProps<"/admin/katalog/kart/[id]">) {
+async function AdminCard({ params }: PageProps<"/admin/katalog/kart/[id]">) {
+  await requireAdmin();
   const { id } = await params;
   const [card, categories, audit] = await Promise.all([
     getAdminCard(id),
@@ -136,5 +139,14 @@ export default async function AdminCardPage({ params }: PageProps<"/admin/katalo
 
       <AuditList entries={audit} title="Kartın işlem geçmişi" />
     </div>
+  );
+}
+
+/** Yetki kontrolü sayfanın kendisinde: içerik build sırasında önceden üretilmez (ADR 0006). */
+export default function Page(props: PageProps<"/admin/katalog/kart/[id]">) {
+  return (
+    <Suspense fallback={<div className="bg-muted h-64 animate-pulse rounded-xl" />}>
+      <AdminCard {...props} />
+    </Suspense>
   );
 }
