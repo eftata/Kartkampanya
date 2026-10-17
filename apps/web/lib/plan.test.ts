@@ -5,19 +5,26 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 
 import { getMonthlyPlan } from "./plan";
 
-const engine = vi.hoisted(() => ({ calls: [] as PlanRequestInput[] }));
+const engine = vi.hoisted(() => ({
+  calls: [] as PlanRequestInput[],
+  fail: false,
+  /** true: istekteki her kural ödül alır; false: hiçbiri. */
+  hitAll: true,
+}));
 vi.mock("@/lib/engine", () => ({
   optimizePlan: (request: PlanRequestInput) => {
     engine.calls.push(request);
+    if (engine.fail) return Promise.resolve({ ok: false, error: "Plan servisine ulaşılamadı." });
+    const hits = engine.hitAll ? request.campaigns : [];
     return Promise.resolve({
       ok: true,
       plan: {
         status: "OPTIMAL",
         allocations: [],
-        campaignsHit: request.campaigns.map((c) => ({ id: c.id, tiers: 1, reward: 1 })),
+        campaignsHit: hits.map((c) => ({ id: c.id, tiers: 1, reward: 1 })),
         nearMisses: [],
         unallocated: [],
-        totalExpected: 0,
+        totalExpected: hits.length,
         baseline: { strategy: "single_best_card", card: null, total: 0 },
         solver: { engine: "cp-sat", ms: 1 },
       },
@@ -106,7 +113,7 @@ describe.skipIf(!process.env.DATABASE_URL)("aylık plan girdisi (veritabanı)", 
 
   afterAll(async () => {
     await prisma.campaign.deleteMany({ where: { program: { bankId: ids.bank } } });
-    await prisma.user.deleteMany({ where: { id: ids.user } });
+    await prisma.user.deleteMany({ where: { id: ids.user } }); // planlar ve işaretler de silinir
     await prisma.cardProduct.deleteMany({ where: { program: { bankId: ids.bank } } });
     await prisma.program.deleteMany({ where: { bankId: ids.bank } });
     await prisma.bank.deleteMany({ where: { id: ids.bank } });
@@ -114,12 +121,15 @@ describe.skipIf(!process.env.DATABASE_URL)("aylık plan girdisi (veritabanı)", 
     await prisma.$disconnect();
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     engine.calls.length = 0;
+    engine.fail = false;
+    engine.hitAll = true;
+    await prisma.monthlyPlan.deleteMany({ where: { userId: ids.user } });
   });
 
   it("kullanıcının kartı, profili ve bu ayki onaylı kampanyalarıyla motoru çağırır", async () => {
-    const result = await getMonthlyPlan(ids.user, TODAY);
+    const result = await getMonthlyPlan(ids.user, { today: TODAY });
     expect(result.status).toBe("ok");
     const [request] = engine.calls;
     expect(request?.month).toBe("2026-11");
@@ -145,10 +155,71 @@ describe.skipIf(!process.env.DATABASE_URL)("aylık plan girdisi (veritabanı)", 
   it("kartı olmayan kullanıcıda motor çağrılmaz", async () => {
     const other = await prisma.user.create({ data: { email: `plan-bos-${run}@kartplan.test` } });
     try {
-      expect(await getMonthlyPlan(other.id, TODAY)).toEqual({ status: "incomplete" });
+      expect(await getMonthlyPlan(other.id, { today: TODAY })).toEqual({ status: "incomplete" });
       expect(engine.calls).toEqual([]);
     } finally {
       await prisma.user.delete({ where: { id: other.id } });
     }
+  });
+
+  it("planı saklar; veri değişmedikçe motoru yeniden çağırmaz, değişince hesaplar", async () => {
+    const first = await getMonthlyPlan(ids.user, { today: TODAY });
+    expect(engine.calls).toHaveLength(1);
+    const row = await prisma.monthlyPlan.findUniqueOrThrow({
+      where: { userId_month: { userId: ids.user, month: "2026-11" } },
+    });
+    expect(row).toMatchObject({ expectedKurus: 2, baselineKurus: 0 });
+    expect(row.inputHash).toMatch(/^[0-9a-f]{64}$/);
+
+    const again = await getMonthlyPlan(ids.user, { today: TODAY });
+    expect(engine.calls).toHaveLength(1);
+    expect(again.status === "ok" && first.status === "ok" && again.view.computedAt).toEqual(
+      first.status === "ok" && first.view.computedAt,
+    );
+
+    await getMonthlyPlan(ids.user, { today: TODAY, force: true });
+    expect(engine.calls).toHaveLength(2);
+
+    await prisma.spendProfile.updateMany({
+      where: { userId: ids.user },
+      data: { monthlyKurus: 600_000 },
+    });
+    try {
+      await getMonthlyPlan(ids.user, { today: TODAY });
+      expect(engine.calls).toHaveLength(3);
+      expect(engine.calls[2]?.budget).toEqual([{ category: ids.market, amount: 600_000 }]);
+    } finally {
+      await prisma.spendProfile.updateMany({
+        where: { userId: ids.user },
+        data: { monthlyKurus: 500_000 },
+      });
+    }
+  });
+
+  it("plana dahil işaretlerini eşitler", async () => {
+    const inPlan = async () =>
+      (
+        await prisma.userCampaignStatus.findUnique({
+          where: { userId_campaignId: { userId: ids.user, campaignId: ids.tiered } },
+        })
+      )?.inPlan;
+    await getMonthlyPlan(ids.user, { today: TODAY });
+    expect(await inPlan()).toBe(true);
+    engine.hitAll = false;
+    await getMonthlyPlan(ids.user, { today: TODAY, force: true });
+    expect(await inPlan()).toBe(false);
+  });
+
+  it("motora ulaşılamazsa son kayıtlı plan eskimiş olarak döner; kayıt yoksa hata", async () => {
+    engine.fail = true;
+    expect(await getMonthlyPlan(ids.user, { today: TODAY })).toEqual({
+      status: "error",
+      error: "Plan servisine ulaşılamadı.",
+    });
+    engine.fail = false;
+    await getMonthlyPlan(ids.user, { today: TODAY });
+    engine.fail = true;
+    const stale = await getMonthlyPlan(ids.user, { today: TODAY, force: true });
+    expect(stale.status === "ok" && stale.view.stale).toBe(true);
   });
 });

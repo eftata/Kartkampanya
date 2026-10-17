@@ -5,7 +5,7 @@ import { createDraftCampaign, currentMonth, deleteCampaigns, signUp } from "./he
 type Banks = { banks: { programs: { slug: string; cards: { id: string }[] }[] }[] };
 type Categories = { categories: { id: string; slug: string }[] };
 
-test("bu ayın planı: kart dağılımı, kampanyalar, tek kart kıyası ve katılım", async ({ page }) => {
+test("bu ayın planı: dağılım, kıyas, katılım, saklama ve yeniden hesaplama", async ({ page }) => {
   const run = Date.now().toString(36);
   const { first, last } = currentMonth();
   const market = `E2E plan market ${run}`;
@@ -82,6 +82,42 @@ test("bu ayın planı: kart dağılımı, kampanyalar, tek kart kıyası ve kat�
     await row.getByRole("button", { name: "Katıldım olarak işaretle" }).click();
     await expect(join.getByRole("listitem").filter({ hasText: market })).toHaveCount(0);
 
+    await expect(page.getByText(/^Son hesaplama:/)).toBeVisible();
+
+    // Kayıtlı plan API'den okunur; başka ay yalnızca kayıtlıysa, geçersiz ay 400.
+    type Dto = {
+      month: string;
+      stale: boolean;
+      computedAt: string;
+      plan: { totalExpected: number };
+    };
+    const stored = (await (await api.get("/api/me/plan")).json()) as Dto;
+    expect(stored).toMatchObject({ month: first.slice(0, 7), stale: false });
+    expect(stored.plan.totalExpected).toBe(20_000);
+    expect((await api.get("/api/me/plan?month=2001-01")).status()).toBe(404);
+    expect((await api.get("/api/me/plan?month=2026-13")).status()).toBe(400);
+
+    // Profil değişince plan kendiliğinden yeniden hesaplanır (market 6.000 TL → 2 kademe).
+    await api.put("/api/me/spend-profile", {
+      data: {
+        items: [
+          { categoryId: id("market"), monthlyKurus: 600_000 },
+          { categoryId: id("akaryakit"), monthlyKurus: 200_000 },
+        ],
+      },
+    });
+    const updated = (await (await api.get("/api/me/plan")).json()) as Dto;
+    expect(updated.plan.totalExpected).toBe(30_000);
+    expect(updated.computedAt > stored.computedAt).toBe(true);
+    const recomputed = await api.post("/api/me/plan/recompute");
+    expect(recomputed.status()).toBe(200);
+
+    // Planın kullandığı kampanyalar listede "Plana dahil".
+    await page.goto("/kampanyalarim");
+    const card = page.getByRole("article").filter({ visible: true }).filter({ hasText: fuel });
+    await expect(card.getByRole("list", { name: "Etiketler" })).toContainText("Plana dahil");
+
+    await page.goto("/plan");
     await marketRow.getByRole("link", { name: market }).click();
     await expect(page).toHaveURL(`/kampanyalarim/${ids[0]}`);
   } finally {

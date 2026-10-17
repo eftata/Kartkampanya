@@ -103,6 +103,9 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
 - Plan sayfası (ADR 0016): `apps/web/lib/plan-request.ts` (saf: kullanıcı verisi → PlanRequest),
   `lib/plan.ts → getMonthlyPlan`, `lib/engine.ts` (`ENGINE_URL`/`ENGINE_TOKEN`, `connection()`).
   e2e motoru Playwright ikinci sunucu olarak başlatır (port 8100, `uv` gerekir).
+  Saklama (ADR 0017): `MonthlyPlan` (kullanıcı + ay); `planInputHash` aynıysa kayıtlı sonuç, değilse
+  yeniden hesap + "plana dahil" eşitleme. Plan girdisini etkileyen sorgular sıralı olmalı (özet
+  kararlılığı). API `GET /api/me/plan`, `POST /api/me/plan/recompute`.
 - LLM ayıklama `engine/pipeline/extract.py` (ADR 0010): Claude API (`ANTHROPIC_API_KEY`,
   `LLM_MODEL`), yapılandırılmış çıktı + pydantic doğrulaması, geçersizse bir kez yeniden deneme,
   `fallbacks: "default"`. Testler `LlmClient` sahtesiyle; testlerde gerçek API çağrısı yapılmaz.

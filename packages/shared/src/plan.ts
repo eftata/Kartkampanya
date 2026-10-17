@@ -146,3 +146,17 @@ export function planJsonSchemas() {
     "plan-response.schema.json": z.toJSONSchema(PlanResponse, { ...options, io: "output" }),
   };
 }
+
+export const PlanMonth = z
+  .string()
+  .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Ay YYYY-AA biçiminde olmalı.");
+
+/** `GET /api/me/plan?month=` ve `POST /api/me/plan/recompute` yanıtı (ADR 0017). */
+export const MonthlyPlanDto = z.object({
+  month: PlanMonth,
+  computedAt: z.iso.datetime(),
+  /** Veriler değişti ama motora ulaşılamadı: son kayıtlı plan. */
+  stale: z.boolean(),
+  plan: PlanResponse,
+});
+export type MonthlyPlanDto = z.infer<typeof MonthlyPlanDto>;

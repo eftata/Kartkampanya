@@ -136,7 +136,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 - [x] TL tamsayı ölçeğinde çözüm (CP-SAT tamsayı ister), 2 sn zaman aşımı + açgözlü yedek algoritma — gösterilen sayılar kuruş cinsinden kesin yeniden hesap (`problem.py`); yedek `greedy.py`
 - [x] Birim testleri: ürün dokümanındaki örnek (beklenen 665 TL) dahil 10 senaryo — `tests/test_optimizer.py`. Not: ürün dokümanının K2/K3 kampanyaları elde yok; ROADMAP'teki sonuçlarla tutarlı yeniden kurgu kullanıldı, asıl değerler gelince güncellenecek
 - [x] "Bu ayın planı" sayfası: kategori başına kart + tutar + kampanya, toplam beklenen kazanç, "her şeyi tek kartla ödeseydin" kıyası — `/plan`; ayrıca katılım hatırlatması ("Katıldım"), limit uyarısı, "Az kaldı". Plan isteği `lib/plan-request.ts` (çok kurallı kampanya → `group`, ay penceresine göre eşik ölçekleme); ADR 0016
-- [ ] Plan `MonthlyPlan` olarak saklanır; profil veya kampanya değişince yeniden hesaplanır
+- [x] Plan `MonthlyPlan` olarak saklanır; profil veya kampanya değişince yeniden hesaplanır — kullanıcı + ay başına tek kayıt; plan isteğinin kanonik özeti (`inputHash`) aynıysa motor çağrılmaz, değişince (kart, limit, profil, kampanya, katılım) yeniden hesaplanır; her hesaplamada "plana dahil" işaretleri eşitlenir; motora ulaşılamazsa son plan uyarıyla. API: `GET /api/me/plan?month=`, `POST /api/me/plan/recompute`; sayfada "Yeniden hesapla"; ADR 0017
 
 **Kabul:** 10 test senaryosu geçiyor; gerçek kullanıcı verisiyle plan 1 saniyenin altında geliyor.
 
@@ -192,7 +192,7 @@ model User {
   cards        UserCard[]
   spend        SpendProfile[]
   consents     Consent[]
-  plans        MonthlyPlan[]
+  plans          MonthlyPlan[]
   campaignStatus UserCampaignStatus[]
   notifyPrefs  Json     @default("{}")
 }
@@ -469,19 +469,21 @@ model UserCampaignStatus {
   @@id([userId, campaignId])
 }
 
-// --- Sonraki sprintler (taslak; uygulanınca yukarıya taşınır) ---
-
+// Aylık plan (Sprint 4): kullanıcı ve ay başına son plan; inputHash aynıysa yeniden hesaplanmaz.
 model MonthlyPlan {
   id            String   @id @default(cuid())
   userId        String
-  user          User     @relation(fields: [userId], references: [id])
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   month         String   // "2026-11"
-  input         Json
-  result        Json
+  input         Json     // PlanRequest
+  inputHash     String   // sha256(kanonik input)
+  result        Json     // PlanResponse
   expectedKurus Int
-  realizedKurus Int?
+  baselineKurus Int
+  realizedKurus Int?     // Faz 2
+  computedAt    DateTime
   createdAt     DateTime @default(now())
-  @@index([userId, month])
+  @@unique([userId, month])
 }
 ```
 

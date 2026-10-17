@@ -1,11 +1,13 @@
 import "server-only";
 
 import { getPrisma } from "@kartplan/db";
-import type { PlanResponse } from "@kartplan/shared";
+import type { Prisma } from "@kartplan/db";
+import { PlanResponse } from "@kartplan/shared";
+import type { PlanRequestInput } from "@kartplan/shared";
 
 import { turkeyToday } from "@/lib/campaign-match";
 import { optimizePlan } from "@/lib/engine";
-import { buildPlanRequest, monthBounds } from "@/lib/plan-request";
+import { buildPlanRequest, monthBounds, planInputHash } from "@/lib/plan-request";
 
 const toDay = (date: Date) => date.toISOString().slice(0, 10);
 
@@ -26,6 +28,9 @@ export type PlanView = {
   ruleCampaign: Record<string, PlanCampaignRef>;
   /** Kartlardan birinin oranları kaynaktan doğrulanmamış (seed tahmini). */
   unverifiedRates: boolean;
+  computedAt: Date;
+  /** Veriler değişti ama motora ulaşılamadı: son kayıtlı plan gösteriliyor. */
+  stale: boolean;
 };
 
 export type PlanResult =
@@ -33,8 +38,15 @@ export type PlanResult =
   | { status: "incomplete" } // kart ya da harcama profili yok
   | { status: "error"; error: string };
 
-/** Bu ayın planı: kullanıcı verisinden PlanRequest kurar, motoru çağırır (ADR 0016). */
-export async function getMonthlyPlan(userId: string, today = turkeyToday()): Promise<PlanResult> {
+/**
+ * Bu ayın planı (ADR 0016, 0017): kullanıcı verisinden PlanRequest kurulur. Özeti kayıtlı planla
+ * aynıysa kayıtlı sonuç döner (motor çağrılmaz); değilse ya da `force` ise yeniden hesaplanır ve
+ * kaydedilir. Motora ulaşılamazsa son kayıtlı plan `stale` olarak döner.
+ */
+export async function getMonthlyPlan(
+  userId: string,
+  { today = turkeyToday(), force = false }: { today?: string; force?: boolean } = {},
+): Promise<PlanResult> {
   const prisma = getPrisma();
   const month = today.slice(0, 7);
   const { last } = monthBounds(month);
@@ -60,6 +72,7 @@ export async function getMonthlyPlan(userId: string, today = turkeyToday()): Pro
     }),
     prisma.spendProfile.findMany({
       where: { userId },
+      orderBy: { categoryId: "asc" }, // özet kararlı olsun diye sıralı
       select: { categoryId: true, monthlyKurus: true, merchantIds: true },
     }),
     prisma.category.findMany({ select: { id: true, name: true, parentId: true } }),
@@ -74,6 +87,7 @@ export async function getMonthlyPlan(userId: string, today = turkeyToday()): Pro
       endsAt: { gte: new Date(`${today}T00:00:00Z`) },
       startsAt: { lte: new Date(`${last}T00:00:00Z`) },
     },
+    orderBy: { id: "asc" },
     include: {
       rules: { orderBy: { id: "asc" } },
       cardScope: { select: { cardProductId: true } },
@@ -119,8 +133,31 @@ export async function getMonthlyPlan(userId: string, today = turkeyToday()): Pro
     merchantCategory: new Map(merchants.map((m) => [m.id, m.categoryId])),
   });
 
-  const result = await optimizePlan(request);
-  if (!result.ok) return { status: "error", error: result.error };
+  const inputHash = planInputHash(request);
+  const stored = await prisma.monthlyPlan.findUnique({
+    where: { userId_month: { userId, month } },
+    select: { inputHash: true, result: true, computedAt: true },
+  });
+  let plan: PlanResponse;
+  let computedAt: Date;
+  let stale = false;
+  if (stored && stored.inputHash === inputHash && !force) {
+    plan = PlanResponse.parse(stored.result);
+    computedAt = stored.computedAt;
+  } else {
+    const result = await optimizePlan(request);
+    if (result.ok) {
+      plan = result.plan;
+      computedAt = new Date();
+      await savePlan(userId, month, request, inputHash, plan, computedAt, campaigns);
+    } else if (stored) {
+      plan = PlanResponse.parse(stored.result);
+      computedAt = stored.computedAt;
+      stale = true;
+    } else {
+      return { status: "error", error: result.error };
+    }
+  }
 
   const ruleCampaign: Record<string, PlanCampaignRef> = {};
   for (const campaign of campaigns) {
@@ -136,13 +173,71 @@ export async function getMonthlyPlan(userId: string, today = turkeyToday()): Pro
     status: "ok",
     view: {
       month,
-      plan: result.plan,
+      plan,
       categoryName: Object.fromEntries(categories.map((c) => [c.id, c.name])),
       cardName: Object.fromEntries(
         cards.map((card) => [card.id, card.nickname || card.cardProduct.name]),
       ),
       ruleCampaign,
       unverifiedRates: cards.some((card) => card.cardProduct.ratesVerifiedAt === null),
+      computedAt,
+      stale,
     },
   };
+}
+
+/**
+ * Planı kaydeder ve "plana dahil" işaretlerini eşitler (tek işlemde): planın ödül aldığı
+ * kampanyalar `inPlan = true`, diğerleri false. Kampanya kimliği kural kimliğinden bulunur.
+ */
+async function savePlan(
+  userId: string,
+  month: string,
+  request: PlanRequestInput,
+  inputHash: string,
+  plan: PlanResponse,
+  computedAt: Date,
+  campaigns: { id: string; rules: { id: string }[] }[],
+) {
+  const campaignOf = new Map(campaigns.flatMap((c) => c.rules.map((rule) => [rule.id, c.id])));
+  const inPlan = [
+    ...new Set(plan.campaignsHit.map((hit) => campaignOf.get(hit.id)).filter((id) => id)),
+  ] as string[];
+  const data = {
+    input: request as Prisma.InputJsonValue,
+    inputHash,
+    result: plan as Prisma.InputJsonValue,
+    expectedKurus: plan.totalExpected,
+    baselineKurus: plan.baseline.total,
+    computedAt,
+  };
+  await getPrisma().$transaction([
+    getPrisma().monthlyPlan.upsert({
+      where: { userId_month: { userId, month } },
+      create: { userId, month, ...data },
+      update: data,
+    }),
+    getPrisma().userCampaignStatus.updateMany({
+      where: { userId, inPlan: true, campaignId: { notIn: inPlan } },
+      data: { inPlan: false },
+    }),
+    ...inPlan.map((campaignId) =>
+      getPrisma().userCampaignStatus.upsert({
+        where: { userId_campaignId: { userId, campaignId } },
+        create: { userId, campaignId, inPlan: true },
+        update: { inPlan: true },
+      }),
+    ),
+  ]);
+}
+
+/** Geçmiş ya da gelecek ay: yalnızca kayıtlı plan (hesaplanmaz). */
+export async function getStoredPlan(userId: string, month: string) {
+  const row = await getPrisma().monthlyPlan.findUnique({
+    where: { userId_month: { userId, month } },
+    select: { month: true, result: true, computedAt: true },
+  });
+  return row
+    ? { month: row.month, plan: PlanResponse.parse(row.result), computedAt: row.computedAt }
+    : null;
 }

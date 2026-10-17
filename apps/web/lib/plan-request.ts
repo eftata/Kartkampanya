@@ -9,6 +9,8 @@
  *   payı kadar eşik büyütülür, oransal ödül küçültülür (`threshold × ay günü / pencere günü`).
  * - Marka kuralı yalnızca kullanıcı o markayı harcama profilinde seçtiyse kategorisine bağlanır.
  */
+import { createHash } from "node:crypto";
+
 import type { PlanRequestInput, RewardType, ThresholdType } from "@kartplan/shared";
 
 import { daysBetween } from "@/lib/campaign-match";
@@ -155,4 +157,24 @@ export function buildPlanRequest(source: PlanSource): PlanRequestInput {
       timeLimitMs: 2000,
     },
   };
+}
+
+/** Nesne anahtarları sıralı JSON: aynı içerik her zaman aynı metni verir. Dizi sırası korunur. */
+function canonical(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    const entries = Object.entries(value)
+      .filter(([, item]) => item !== undefined)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+    return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${canonical(item)}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/**
+ * Plan isteğinin özeti (ADR 0017). Aynıysa kayıtlı plan geçerlidir; kart, limit, profil, kampanya
+ * ya da katılım değişince özet değişir ve plan yeniden hesaplanır.
+ */
+export function planInputHash(request: PlanRequestInput): string {
+  return createHash("sha256").update(canonical(request)).digest("hex");
 }

@@ -12,22 +12,23 @@ datasource db {
 }
 
 model User {
-  id             String          @id @default(cuid())
-  email          String          @unique
+  id             String               @id @default(cuid())
+  email          String               @unique
   emailVerified  DateTime? // Auth.js: magic link ile doğrulanınca dolar
   name           String?
   image          String? // Auth.js: Google profil fotoğrafı
-  role           Role            @default(USER)
-  createdAt      DateTime        @default(now())
+  role           Role                 @default(USER)
+  createdAt      DateTime             @default(now())
   deletedAt      DateTime? // KVKK: hesap silme talebi; 30 gün sonra kalıcı silinir
   accounts       Account[]
   sessions       Session[]
   consents       Consent[]
   cards          UserCard[]
   spend          SpendProfile[]
-  notifyPrefs    Json            @default("{}")
+  notifyPrefs    Json                 @default("{}")
   adminAuditLogs AdminAuditLog[]
   campaignStatus UserCampaignStatus[]
+  plans          MonthlyPlan[]
 }
 
 enum Role {
@@ -176,14 +177,14 @@ model CampaignSource {
 }
 
 model Campaign {
-  id              String          @id @default(cuid())
+  id              String               @id @default(cuid())
   programId       String
-  program         Program         @relation(fields: [programId], references: [id])
+  program         Program              @relation(fields: [programId], references: [id])
   sourceId        String? // null = admin elle ekledi
-  source          CampaignSource? @relation(fields: [sourceId], references: [id])
+  source          CampaignSource?      @relation(fields: [sourceId], references: [id])
   cardScope       CampaignCard[] // boş = programdaki tüm kartlar
   title           String
-  sourceUrl       String          @unique
+  sourceUrl       String               @unique
   rawText         String
   rawHash         String // content_hash: başlık+tarih+metin sha256; aynıysa yeniden ayıklanmaz
   summary         String[] // en fazla 3 sade madde
@@ -191,14 +192,14 @@ model Campaign {
   endsAt          DateTime
   joinMethod      JoinMethod
   joinDeadline    DateTime?
-  status          CampaignStatus  @default(DRAFT)
+  status          CampaignStatus       @default(DRAFT)
   confidence      Float? // LLM güven skoru 0–1 (para değil)
   uncertainFields String[] // LLM'in emin olmadığı alanlar; onay kuyruğunda vurgulanır
   rules           CampaignRule[]
   userStatus      UserCampaignStatus[]
-  lastSeenAt      DateTime        @default(now()) // kaynak listesinde en son görüldüğü an
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  lastSeenAt      DateTime             @default(now()) // kaynak listesinde en son görüldüğü an
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
 
   @@index([status, endsAt])
   @@index([programId, status])
@@ -286,14 +287,14 @@ enum PipelineRunStatus {
 // Hesap ya da kampanya silinince birlikte silinir (KVKK).
 model UserCampaignStatus {
   userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   campaignId    String
-  campaign      Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  joined        Boolean  @default(false) // kullanıcı bankada katıldığını işaretledi
+  campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  joined        Boolean   @default(false) // kullanıcı bankada katıldığını işaretledi
   joinedAt      DateTime?
-  inPlan        Boolean  @default(false) // aylık plan bu kampanyayı kullanıyor (Sprint 4)
-  progressKurus Int      @default(0) // kampanyaya sayılan harcama (Faz 2: işlem takibi)
-  updatedAt     DateTime @updatedAt
+  inPlan        Boolean   @default(false) // aylık plan bu kampanyayı kullanıyor (Sprint 4)
+  progressKurus Int       @default(0) // kampanyaya sayılan harcama (Faz 2: işlem takibi)
+  updatedAt     DateTime  @updatedAt
 
   @@id([userId, campaignId])
   @@index([campaignId])
@@ -356,4 +357,24 @@ model VerificationToken {
   expires    DateTime
 
   @@id([identifier, token])
+}
+
+// Aylık plan (Sprint 4, ADR 0017): kullanıcı ve ay başına son hesaplanan plan. `inputHash` plan
+// isteğinin kanonik özeti; aynıysa kayıtlı sonuç kullanılır, değiştiyse (kart, limit, profil,
+// kampanya, katılım) yeniden hesaplanır. Tutarlar kuruş.
+model MonthlyPlan {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  month         String // "2026-11"
+  input         Json // PlanRequest
+  inputHash     String // sha256(kanonik input)
+  result        Json // PlanResponse
+  expectedKurus Int
+  baselineKurus Int
+  realizedKurus Int? // Faz 2: gerçekleşen kazanç
+  computedAt    DateTime
+  createdAt     DateTime @default(now())
+
+  @@unique([userId, month])
 }

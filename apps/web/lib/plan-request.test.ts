@@ -1,7 +1,7 @@
 import { PlanRequest } from "@kartplan/shared";
 import { describe, expect, it } from "vitest";
 
-import { buildPlanRequest, monthBounds } from "./plan-request";
+import { buildPlanRequest, monthBounds, planInputHash } from "./plan-request";
 import type { PlanCampaignInput, PlanRuleInput, PlanSource } from "./plan-request";
 
 const rule = (overrides: Partial<PlanRuleInput> = {}): PlanRuleInput => ({
@@ -176,4 +176,28 @@ describe("monthBounds", () => {
   ])("%s → %s", (month, last, days) =>
     expect(monthBounds(month)).toEqual({ first: `${month}-01`, last, days }),
   );
+});
+
+describe("planInputHash", () => {
+  it("anahtar sırasından bağımsız, içerik değişince değişir", () => {
+    const request = buildPlanRequest(source());
+    const reverse = (value: unknown): unknown =>
+      Array.isArray(value)
+        ? value.map(reverse)
+        : value !== null && typeof value === "object"
+          ? Object.fromEntries(
+              Object.entries(value)
+                .reverse()
+                .map(([k, v]) => [k, reverse(v)]),
+            )
+          : value;
+    const reordered = reverse(request) as typeof request;
+    expect(JSON.stringify(reordered)).not.toBe(JSON.stringify(request));
+    expect(planInputHash(reordered)).toBe(planInputHash(request));
+    const changed = buildPlanRequest(
+      source({ spend: [{ categoryId: "market", monthlyKurus: 400_100, merchantIds: [] }] }),
+    );
+    expect(planInputHash(changed)).not.toBe(planInputHash(request));
+    expect(planInputHash(request)).toMatch(/^[0-9a-f]{64}$/);
+  });
 });

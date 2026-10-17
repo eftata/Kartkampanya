@@ -3,12 +3,19 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { monthLabel, PlanView } from "@/components/plan-view";
+import { RecomputePlanButton } from "@/components/recompute-plan-button";
 import { requireUser } from "@/lib/auth/session";
 import { getMonthlyPlan } from "@/lib/plan";
 import { hasSpendProfile } from "@/lib/spend-profile";
 import { countUserCards } from "@/lib/user-cards";
 
 export const metadata: Metadata = { title: "Bu ayın planı" };
+
+const computedFormat = new Intl.DateTimeFormat("tr-TR", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Europe/Istanbul",
+});
 
 async function PlanContent() {
   const user = await requireUser();
@@ -25,13 +32,23 @@ async function PlanContent() {
       </p>
     );
   }
+  const { view } = result;
   return (
     <div className="space-y-6">
       <p className="text-muted-foreground">
-        {monthLabel(result.view.month)} için harcamalarını kartlarına en çok kazandıracak biçimde
-        dağıttık.
+        {monthLabel(view.month)} için harcamalarını kartlarına en çok kazandıracak biçimde dağıttık.
+        Kartların, harcama profilin ya da kampanyalar değişince plan kendiliğinden güncellenir.
       </p>
-      <PlanView view={result.view} />
+      {view.stale && (
+        <p role="status" className="rounded-lg bg-amber-500/10 px-3 py-2 text-sm">
+          Bilgilerin değişti ama plan şu anda güncellenemedi; son hesaplanan plan gösteriliyor.
+        </p>
+      )}
+      <PlanView view={view} />
+      <p className="text-muted-foreground flex flex-wrap items-center gap-3 text-xs">
+        <span>Son hesaplama: {computedFormat.format(view.computedAt)}</span>
+        <RecomputePlanButton />
+      </p>
     </div>
   );
 }
