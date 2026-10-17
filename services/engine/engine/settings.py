@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -20,6 +21,21 @@ class Settings(BaseSettings):
     # taradığını görebilsin). İstekler arası bekleme 2 sn'nin altına indirilemez.
     pipeline_user_agent: str = "KartPlanBot/0.1"
     pipeline_min_delay_seconds: float = Field(default=2.0, ge=2.0)
+
+    # Veri hattının yazdığı veritabanı (web ile aynı). Prisma biçimindeki "?schema=" parametresi
+    # psycopg'ye uygun hale `postgres_dsn` ile çevrilir.
+    database_url: SecretStr = Field(default=SecretStr(""))
+
+    def postgres_dsn(self) -> tuple[str, str]:
+        """(psycopg bağlantı adresi, şema adı). Prisma'nın `schema` parametresi ayrılır."""
+        url = self.database_url.get_secret_value()
+        if not url:
+            raise RuntimeError("DATABASE_URL tanımlı değil.")
+        parts = urlsplit(url)
+        query = parse_qsl(parts.query, keep_blank_values=True)
+        schema = next((value for key, value in query if key == "schema"), "public")
+        rest = urlencode([(key, value) for key, value in query if key != "schema"])
+        return urlunsplit((parts.scheme, parts.netloc, parts.path, rest, parts.fragment)), schema
 
 
 @lru_cache

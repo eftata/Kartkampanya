@@ -111,7 +111,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 
 - [x] Şema: `Campaign`, `CampaignRule`, `CampaignSource`, `PipelineRun` — kart kapsamı `CampaignCard` ara tablosu; ADR 0007
 - [ ] Adaptör arayüzü + ilk 2 adaptör (örn. World ve Bonus): liste sayfası → detay sayfası → ham metin — **arayüz tamam** (`BankAdapter`, `PoliteFetcher`, tarih/metin yardımcıları; ADR 0008). World ve Bonus adaptörleri bekliyor: geliştirme ortamının ağ politikası banka sitelerini engelliyor, seçiciler gerçek HTML görülmeden yazılmaz.
-- [ ] Değişiklik tespiti: metin hash'i aynıysa yeniden ayıklama yapma
+- [x] Değişiklik tespiti: metin hash'i aynıysa yeniden ayıklama yapma — `content_hash` (başlık + tarih + boşluk farkları yok sayılan metin), `run_source` (yeni/değişmedi/değişti; değişen yayındaki kampanya DRAFT'a çekilir), `CampaignStore` (psycopg); ADR 0009
 - [ ] LLM ayıklama: ham metin → `CampaignRule[]` JSON + güven skoru (şema doğrulamalı)
 - [ ] 30 elle etiketlenmiş kampanyalık test seti; ayıklama doğruluğu raporu
 - [ ] Admin onay kuyruğu: ham metin ile ayıklanan kurallar yan yana, düzenle → onayla / reddet
@@ -341,7 +341,7 @@ model Campaign {
   title           String
   sourceUrl       String          @unique
   rawText         String
-  rawHash         String // sha256(rawText); aynıysa yeniden ayıklanmaz
+  rawHash         String // content_hash: başlık+tarih+metin sha256; aynıysa yeniden ayıklanmaz
   summary         String[] // en fazla 3 sade madde
   startsAt        DateTime
   endsAt          DateTime

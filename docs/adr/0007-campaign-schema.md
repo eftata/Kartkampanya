@@ -21,7 +21,7 @@ doğrudan okur/yazar, ama şemanın sahibi Prisma'dır (ADR 0001). ROADMAP tasla
   "programdaki tüm kartlar" demek; metin dizisinde silinen bir kartın kimliği sessizce kopar ve
   kampanyayı yanlışlıkla tüm kartlara açabilirdi. Ara tabloda kart ürünü silinemez (`Restrict`);
   admin panelindeki silme de bunu Türkçe hatayla bildirir.
-- **Pipeline alanları:** `rawHash` (sha256; aynıysa yeniden ayıklama yok), `lastSeenAt` (kaynak
+- **Pipeline alanları:** `rawHash` (başlık + tarih + metin özeti, ADR 0009; aynıysa yeniden ayıklama yok), `lastSeenAt` (kaynak
   listesinden kalkan kampanyayı fark etmek için), `uncertainFields` (LLM'in emin olmadığı alanlar;
   onay kuyruğunda vurgulanır), `confidence` (0–1; para değil, `Float`).
 - **`PipelineRun`:** `adapter` metni yerine `sourceId` ilişkisi ve `status`

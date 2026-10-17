@@ -154,6 +154,13 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
 - Her adaptör, sitenin **gerçek** sayfalarından kaydedilmiş fixture'larla test edilir
   (`tests/fixtures/<adaptör>-*.html`). Gerçek HTML görülmeden seçici yazılmaz; sentetik fixture'lar
   yalnızca taban sınıfı test eder ve dosya başında "SENTETİK" yazar.
+- Değişiklik tespiti: `content_hash` (başlık + tarih + metin, boşluk farkları yok sayılır). Aynıysa
+  yalnızca `lastSeenAt` güncellenir; değiştiyse kampanya `DRAFT`'a çekilir. `run_source` yeni ve
+  değişenleri `pending` olarak döndürür (ayıklama sonraki adım).
+- DB erişimi yalnızca `pipeline/store.py` (`CampaignStore`, `connect`). `id` ve `updatedAt` Prisma'da
+  uygulama tarafında üretilir; Python bunları açıkça yazar. Zaman damgaları UTC, saat dilimsiz.
+- DB testleri `DATABASE_URL` yoksa atlanır; CI'da `ENGINE_DB_TESTS=required` atlanmayı yasaklar
+  (motor işi Postgres + `pnpm db:deploy` ile çalışır).
 - Bu geliştirme ortamının ağ politikası banka sitelerini engelliyor; fixture'lar izin verilen bir
   ortamdan kaydedilir.
 
@@ -166,7 +173,8 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
 - Optimizer **durumsuzdur**, veritabanına dokunmaz: `PlanRequest` → `PlanResponse`.
 - Veri hattı sonuçları her zaman `status = DRAFT` yazar; yayına alma kararı admin onayıdır.
 - Şema yalnızca Prisma migration ile değişir; Python tarafı şemayı değiştirmez.
-- Prisma dışında ham SQL yok.
+- Prisma dışında ham SQL yok. **İstisna:** Python veri hattı Prisma kullanamaz; tüm SQL
+  `services/engine/engine/pipeline/store.py` içinde, parametreli (psycopg), şemayı değiştirmeden (ADR 0009).
 
 ## Kod kuralları
 

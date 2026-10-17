@@ -184,7 +184,7 @@ model Campaign {
   title           String
   sourceUrl       String          @unique
   rawText         String
-  rawHash         String // sha256(rawText); aynıysa yeniden ayıklanmaz
+  rawHash         String // content_hash: başlık+tarih+metin sha256; aynıysa yeniden ayıklanmaz
   summary         String[] // en fazla 3 sade madde
   startsAt        DateTime
   endsAt          DateTime
