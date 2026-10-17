@@ -5,7 +5,8 @@ import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 
 import { auth } from "@/auth";
-import { SIGNED_OUT_REDIRECT } from "@/lib/auth/routes";
+import { CONSENT_PATH, SIGNED_OUT_REDIRECT } from "@/lib/auth/routes";
+import { hasCurrentConsent } from "@/lib/consent";
 
 export type CurrentUser = Session["user"];
 
@@ -19,10 +20,14 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   return session?.user ?? null;
 });
 
-/** Giriş yapılmamışsa landing'e yönlendirir. Korumalı veriye erişen her yerde çağrılır. */
+/**
+ * Giriş yapılmamışsa landing'e yönlendirir. Korumalı veriye erişen her yerde çağrılır.
+ * Güncel aydınlatma metni ve açık rıza onaylanmamışsa önce onay ekranına (`/onay`) gider (ADR 0019).
+ */
 export async function requireUser(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) redirect(SIGNED_OUT_REDIRECT);
+  if (!(await hasCurrentConsent(user.id))) redirect(CONSENT_PATH);
   return user;
 }
 

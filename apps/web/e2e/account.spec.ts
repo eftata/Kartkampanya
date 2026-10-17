@@ -85,7 +85,8 @@ test("Profilim: harcama profilini günceller ve sayfada kalır", async ({ page }
   });
 
   await page.goto("/profil");
-  await expect(page.getByRole("main").getByText(email)).toBeVisible();
+  // E-posta "Hesap" kartında görünür (kapalı "Hesabımı sil" bölümündeki onay metni sayılmaz).
+  await expect(page.getByRole("main").getByText(email).filter({ visible: true })).toBeVisible();
   await expect(page.getByLabel("Market aylık tutar (TL)")).toHaveValue("6000");
   await expect(page.getByTestId("spend-total")).toHaveText("₺9.000");
 

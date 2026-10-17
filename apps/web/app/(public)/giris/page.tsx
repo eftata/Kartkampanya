@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { signInWithGoogle } from "@/lib/auth/actions";
+import { ACCESS_DENIED_MESSAGE } from "@/lib/auth/routes";
 
 import { EmailSignInForm } from "./email-form";
 
@@ -20,7 +21,7 @@ export const metadata: Metadata = { title: "Giriş yap" };
 const ERROR_MESSAGES: Record<string, string> = {
   Verification: "Giriş bağlantısının süresi dolmuş ya da daha önce kullanılmış. Yenisini iste.",
   OAuthAccountNotLinked: "Bu e-posta başka bir giriş yöntemiyle kayıtlı.",
-  AccessDenied: "Bu hesapla giriş yapılamıyor.",
+  AccessDenied: ACCESS_DENIED_MESSAGE,
 };
 
 async function AuthErrorNotice({

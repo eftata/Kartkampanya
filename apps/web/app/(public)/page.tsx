@@ -1,10 +1,25 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { Button } from "@/components/ui/button";
 
-export default function LandingPage() {
+/** Hesap silindikten sonra (`/?hesap=silindi`) kısa bilgi. */
+async function DeletedNotice({ searchParams }: { searchParams: PageProps<"/">["searchParams"] }) {
+  const { hesap } = await searchParams;
+  if (hesap !== "silindi") return null;
+  return (
+    <p role="status" className="rounded-lg bg-emerald-500/10 px-3 py-2 text-sm">
+      Hesabın kapatıldı. Verilerin 30 gün içinde kalıcı olarak silinecek.
+    </p>
+  );
+}
+
+export default function LandingPage({ searchParams }: PageProps<"/">) {
   return (
     <section className="flex flex-col items-start gap-6 py-12">
+      <Suspense>
+        <DeletedNotice searchParams={searchParams} />
+      </Suspense>
       <h1 className="max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
         Kart kampanyalarından her ay en çok kazanacağın planı al.
       </h1>

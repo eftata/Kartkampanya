@@ -132,8 +132,9 @@ e-postalar spama düşer. Gerekenler: host, port (465 → TLS), kullanıcı, şi
    Google değişkenlerini sonradan eklersen **yeniden deploy et**: buton build anında belirlenir.
 
 4. Deploy et → `https://<proje>.vercel.app/api/health` → `{"status":"ok"}`.
-5. **Bildirim işi:** `apps/web/vercel.json` günlük cron'u tanımlar (`/api/cron/notifications`,
-   06:00 UTC). Vercel, `CRON_SECRET` tanımlıysa isteğe `Authorization: Bearer` ekler. Elle deneme:
+5. **Zamanlanmış işler:** `apps/web/vercel.json` iki günlük cron tanımlar: bildirimler
+   (`/api/cron/notifications`, 06:00 UTC) ve silinen hesapların 30 gün sonra kalıcı silinmesi
+   (`/api/cron/purge-accounts`, 02:30 UTC). Vercel, `CRON_SECRET` tanımlıysa isteğe `Authorization: Bearer` ekler. Elle deneme:
 
    ```bash
    curl -H "Authorization: Bearer $CRON_SECRET" "https://<staging>/api/cron/notifications?user=<kullanıcı-id>"

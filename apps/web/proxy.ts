@@ -24,5 +24,6 @@ export const config = {
     "/kampanyalarim/:path*",
     "/profil/:path*",
     "/admin/:path*",
+    "/onay/:path*",
   ],
 };

@@ -7,16 +7,29 @@ import { getMagicLink } from "./mailpit";
 export const uniqueEmail = (prefix = "e2e") =>
   `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@kartplan.test`;
 
-/** Yeni kullanıcı kaydeder, oturum açar ve onboarding'e varmayı bekler; giriş bağlantısını döndürür. */
-export async function signUp(page: Page, email = uniqueEmail()): Promise<string> {
+/**
+ * Yeni kullanıcı kaydeder, oturum açar, KVKK onayını verir ve onboarding'e varmayı bekler; giriş
+ * bağlantısını döndürür. `consent: false` → onay ekranında (`/onay`) durur.
+ */
+export async function signUp(
+  page: Page,
+  email = uniqueEmail(),
+  { consent = true }: { consent?: boolean } = {},
+): Promise<string> {
   await page.goto("/giris");
   await page.getByLabel("E-posta").fill(email);
   await page.getByRole("button", { name: "Giriş bağlantısı gönder" }).click();
   await expect(page).toHaveURL("/giris/dogrula");
   const magicLink = await getMagicLink(email);
   await page.goto(magicLink);
-  // Yeni kullanıcı /plan'a düşer ve oradan (akışla gelen bölümde, istemci tarafında) /baslangic'e
-  // yönlenir. Bu yönlendirme bitmeden başka sayfaya gidilirse gezinmeler çakışır (ERR_ABORTED).
+  // Yeni kullanıcı /plan'a düşer, KVKK onayı için /onay'a, onaydan sonra /baslangic'e yönlenir.
+  // Yönlendirme bitmeden başka sayfaya gidilirse gezinmeler çakışır (ERR_ABORTED).
+  await page.waitForURL("**/onay");
+  if (!consent) return magicLink;
+  const form = page.getByRole("form", { name: "KVKK onayı" });
+  await form.getByLabel("okudum").check();
+  await form.getByLabel("açık rıza veriyorum").check();
+  await form.getByRole("button", { name: "Onayla ve devam et" }).click();
   await page.waitForURL("**/baslangic");
   return magicLink;
 }

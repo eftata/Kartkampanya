@@ -174,6 +174,19 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   (kurallar veri hattının pydantic modeliyle aynı tutulmalı). İşlem kaydı yardımcıları
   `lib/admin-audit.ts`. e2e'de taslak kampanya: `e2e/helpers.ts → createDraftCampaign`.
 
+## KVKK — ayrıntı: docs/adr/0019-kvkk.md
+
+- Metinler ve sürümler `apps/web/lib/legal.ts` (taslak; metin değişince sürümü artır → herkes yeniden
+  onaylar). Rıza `Consent` (her değişiklik yeni satır), iş mantığı `lib/consent.ts`.
+- `requireUser()` güncel onay yoksa `/onay`'a, `withUser()` 403; veri indirme ve hesap silme
+  `withUser(..., { consent: false })` ile muaf. `/onay` herkese açık grupta (oradaki menü `requireUser` çağırmasın).
+- Hesap: `lib/account.ts` (`exportUserData`, `requestAccountDeletion`, `purgeDeletedAccounts`),
+  API `GET /api/me/export`, `DELETE /api/me`, cron `/api/cron/purge-accounts`. e2e `signUp` onayı verir
+  (`{ consent: false }` onay ekranında durur).
+- `"use server"` dosyaları yalnızca async fonksiyon dışa aktarır (sabitleri `lib/auth/routes.ts` gibi
+  modüllere koy); React form eylemi hata dönse de formu sıfırlar — değerleri korunması gereken formlarda
+  eylemi `onSubmit` + `startTransition` ile çağır.
+
 ## Bildirimler (`apps/web/lib/notifications`) — ayrıntı: docs/adr/0018-notifications.md
 
 - Günlük iş `GET /api/cron/notifications` (`CRON_SECRET`, Vercel Cron `vercel.json`); `?user=` tek

@@ -21,7 +21,10 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">{children}</main>
       <footer className="text-muted-foreground border-t py-6 text-center text-xs">
-        KartPlan · Kart numarası, CVV veya son kullanma tarihi asla istemeyiz.
+        KartPlan · Kart numarası, CVV veya son kullanma tarihi asla istemeyiz. ·{" "}
+        <Link href="/aydinlatma" className="underline">
+          KVKK Aydınlatma Metni
+        </Link>
       </footer>
     </>
   );

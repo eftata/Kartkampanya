@@ -2,21 +2,30 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { DeleteAccountForm } from "@/components/delete-account-form";
+import { MarketingConsentToggle } from "@/components/marketing-consent-toggle";
 import { NotificationPrefsForm } from "@/components/notification-prefs-form";
 import { SpendProfileForm } from "@/components/spend-profile-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth/session";
+import { getConsentStatus } from "@/lib/consent";
 import { getNotificationPrefs } from "@/lib/notifications/prefs";
 import { getSpendCategories, getSpendProfile } from "@/lib/spend-profile";
 
 export const metadata: Metadata = { title: "Profilim" };
 
+const consentDate = new Intl.DateTimeFormat("tr-TR", {
+  dateStyle: "medium",
+  timeZone: "Europe/Istanbul",
+});
+
 async function Profile() {
   const user = await requireUser();
-  const [categories, profile, prefs] = await Promise.all([
+  const [categories, profile, prefs, consent] = await Promise.all([
     getSpendCategories(),
     getSpendProfile(user.id),
     getNotificationPrefs(user.id),
+    getConsentStatus(user.id),
   ]);
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
@@ -54,8 +63,35 @@ async function Profile() {
               <Link href="/kartlarim" className="underline">
                 Kartlarım
               </Link>{" "}
-              sayfasından yönetebilirsin. Veri indirme ve hesap silme yakında burada olacak.
+              sayfasından yönetebilirsin.
             </p>
+          </CardContent>
+        </Card>
+        <Card id="verilerim" className="h-fit">
+          <CardHeader>
+            <CardTitle>Verilerin ve gizlilik</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            <p className="text-muted-foreground">
+              <Link href="/aydinlatma" className="underline">
+                Aydınlatma metni
+              </Link>
+              {consent.aydinlatma &&
+                ` · onay: ${consentDate.format(consent.aydinlatma.at)} (sürüm ${consent.aydinlatma.version})`}
+            </p>
+            <MarketingConsentToggle
+              granted={consent.pazarlama?.granted ?? false}
+              text="Yeni özellik ve kampanya duyurularını e-postayla almak istiyorum."
+            />
+            <a href="/api/me/export" download className="block font-medium underline">
+              Verilerimi indir (JSON)
+            </a>
+            <details>
+              <summary className="text-destructive cursor-pointer">Hesabımı sil</summary>
+              <div className="mt-3">
+                <DeleteAccountForm email={user.email} />
+              </div>
+            </details>
           </CardContent>
         </Card>
       </div>

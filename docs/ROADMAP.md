@@ -144,7 +144,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 
 - [x] E-posta: katılım hatırlatma (kampanya başlangıcında), son 3 gün uyarısı, haftalık plan özeti — günlük iş `GET /api/cron/notifications` (Vercel Cron, `CRON_SECRET`), `NotificationLog` ile tek sefer, kullanıcı başına tür başına toplu e-posta; ADR 0018
 - [x] Bildirim tercihleri ve tek tıkla abonelikten çıkma — Profilim → "E-posta bildirimleri" (`/profil#bildirimler`), API `GET/PUT /api/me/notifications`; tek tıkla çıkma: imzalı bağlantı, `/abonelik` onay sayfası, `List-Unsubscribe-Post`; ADR 0018
-- [ ] KVKK: aydınlatma metni, açık rıza kaydı (versiyonlu), veri indirme, hesap silme
+- [x] KVKK: aydınlatma metni, açık rıza kaydı (versiyonlu), veri indirme, hesap silme — `/aydinlatma` (taslak, hukuki inceleme bekliyor), `/onay` kapısı (aydınlatma + yurt dışı aktarım açık rızası zorunlu, pazarlama ayrı), Profilim → "Verilerin ve gizlilik", `GET /api/me/export`, `DELETE /api/me`, 30 gün sonra kalıcı silme (`/api/cron/purge-accounts`); ADR 0019
 - [ ] Landing page + herkese açık kampanya sayfaları (SEO), sitemap
 - [ ] Rate limiting, güvenlik başlıkları, hata takibi (Sentry), ürün analitiği (PostHog)
 
@@ -201,11 +201,12 @@ enum Role { USER ADMIN }
 model Consent {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  kind      String   // "kvkk_aydinlatma" | "pazarlama" ...
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String   // "kvkk_aydinlatma" | "acik_riza_yurtdisi" | "pazarlama"
   version   String
   granted   Boolean
   createdAt DateTime @default(now())
+  @@index([userId, kind, createdAt])
 }
 
 model Bank {
@@ -707,10 +708,10 @@ Bir görev ancak aşağıdaki "tamamlandı" tanımını karşılıyorsa kapanır
 
 ### KVKK
 
-- [ ] Aydınlatma metni ve gizlilik politikası yayında (avukat kontrolünden geçmiş)
-- [ ] Açık rıza versiyonlu kaydediliyor (`Consent`), pazarlama rızası ayrı
-- [ ] Veri indirme (`/api/me/export`) ve hesap silme çalışıyor
-- [ ] Veri saklama süresi tanımlı; silinen hesaplar 30 gün sonra kalıcı silinir
+- [ ] Aydınlatma metni ve gizlilik politikası yayında (avukat kontrolünden geçmiş) — taslak `/aydinlatma`'da; avukat kontrolü ve veri sorumlusu bilgileri bekliyor
+- [x] Açık rıza versiyonlu kaydediliyor (`Consent`), pazarlama rızası ayrı
+- [x] Veri indirme (`/api/me/export`) ve hesap silme çalışıyor
+- [x] Veri saklama süresi tanımlı; silinen hesaplar 30 gün sonra kalıcı silinir
 - [ ] Analitik araçları kişisel veri almadan (e-posta, isim) çalışıyor
 - [ ] Veri lokasyonu ve yurt dışı aktarım durumu yazılı olarak belirlendi
 - [ ] VERBİS kayıt yükümlülüğü kontrol edildi

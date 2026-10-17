@@ -38,11 +38,13 @@ enum Role {
 }
 
 // Açık rıza kaydı: her onay/geri çekme yeni bir satırdır, geçmiş korunur.
+// Rıza ve bilgilendirme kayıtları (ADR 0019): her değişiklik yeni satır (geçmiş korunur); geçerli
+// olan, türün en son kaydıdır. Hesap kalıcı silinince birlikte silinir.
 model Consent {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  kind      String // "kvkk_aydinlatma" | "pazarlama" ...
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String // "kvkk_aydinlatma" | "acik_riza_yurtdisi" | "pazarlama"
   version   String
   granted   Boolean
   createdAt DateTime @default(now())

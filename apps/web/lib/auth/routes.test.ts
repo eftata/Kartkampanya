@@ -11,10 +11,16 @@ describe("isProtectedPath", () => {
     "/profil",
     "/admin",
     "/admin/katalog",
+    "/onay",
   ])("%s korumalıdır", (path) => expect(isProtectedPath(path)).toBe(true));
 
-  it.each(["/", "/giris", "/giris/dogrula", "/kampanyalar", "/planlar", "/api/health"])(
-    "%s herkese açıktır",
-    (path) => expect(isProtectedPath(path)).toBe(false),
-  );
+  it.each([
+    "/",
+    "/giris",
+    "/giris/dogrula",
+    "/kampanyalar",
+    "/planlar",
+    "/api/health",
+    "/aydinlatma",
+  ])("%s herkese açıktır", (path) => expect(isProtectedPath(path)).toBe(false));
 });

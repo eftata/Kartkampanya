@@ -3,16 +3,24 @@ import "server-only";
 import type { z } from "zod";
 
 import { getCurrentUser } from "@/lib/auth/session";
+import { hasCurrentConsent } from "@/lib/consent";
 import type { CurrentUser } from "@/lib/auth/session";
 
 export const jsonError = (status: number, error: string) => Response.json({ error }, { status });
 
-/** Route handler'lar için: oturum yoksa 401 döner (sayfalardaki gibi yönlendirmez). */
+/**
+ * Route handler'lar için: oturum yoksa 401 döner (sayfalardaki gibi yönlendirmez). Güncel KVKK onayı
+ * yoksa 403; veri indirme ve hesap silme gibi ilgili kişi hakları `{ consent: false }` ile muaftır.
+ */
 export async function withUser(
   handler: (user: CurrentUser) => Promise<Response>,
+  { consent = true }: { consent?: boolean } = {},
 ): Promise<Response> {
   const user = await getCurrentUser();
   if (!user) return jsonError(401, "Giriş yapmalısın.");
+  if (consent && !(await hasCurrentConsent(user.id))) {
+    return jsonError(403, "Önce aydınlatma metnini ve açık rıza metnini onayla.");
+  }
   return handler(user);
 }
 

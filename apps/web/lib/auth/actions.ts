@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { signIn } from "@/auth";
-import { SIGNED_IN_REDIRECT } from "@/lib/auth/routes";
+import { ACCESS_DENIED_MESSAGE, SIGNED_IN_REDIRECT } from "@/lib/auth/routes";
 
 const EmailSchema = z.email().max(254);
 
@@ -29,6 +29,8 @@ export async function signInWithEmail(
     });
   } catch (error) {
     if (error instanceof AuthError) {
+      // AccessDenied: signIn geri çağrısı reddetti (silinmiş hesap, ADR 0019).
+      if (error.type === "AccessDenied") return { error: ACCESS_DENIED_MESSAGE, email };
       return { error: "Giriş bağlantısı gönderilemedi. Biraz sonra tekrar dene.", email };
     }
     throw error;
