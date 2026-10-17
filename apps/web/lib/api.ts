@@ -16,6 +16,15 @@ export async function withUser(
   return handler(user);
 }
 
+/** `/api/admin/*` için: oturum yoksa 401, ADMIN değilse 403. */
+export async function withAdmin(
+  handler: (user: CurrentUser) => Promise<Response>,
+): Promise<Response> {
+  return withUser((user) =>
+    user.role === "ADMIN" ? handler(user) : Promise.resolve(jsonError(403, "Yetkin yok.")),
+  );
+}
+
 /** JSON gövdesini zod şemasıyla doğrular. */
 export async function parseJson<T extends z.ZodType>(
   request: Request,
@@ -41,4 +50,13 @@ export async function parseJson<T extends z.ZodType>(
     };
   }
   return { ok: true, data: parsed.data };
+}
+
+/** `MutationResult` hatasını HTTP durumuna çevirir. */
+export function mutationError(
+  result: { code: "not_found" | "conflict" | "limit"; error: string },
+  notFoundStatus = 404,
+): Response {
+  const status = { not_found: notFoundStatus, conflict: 409, limit: 422 }[result.code];
+  return jsonError(status, result.error);
 }

@@ -103,7 +103,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 - [x] Onboarding sihirbazı: banka → program → kart seçimi (kart numarası yok), opsiyonel limit ve kesim günü — `/baslangic`; kartsız kullanıcı `/plan`dan buraya yönlenir; API: `GET /api/catalog/banks`, `GET/POST /api/me/cards`, `DELETE /api/me/cards/{id}`
 - [x] Harcama profili ekranı: kategori seçimi + aylık tutar kaydırıcısı + tercih edilen markalar — onboarding 2. adımı `/baslangic/harcama` (form `components/spend-profile-form.tsx`, Profilim'de yeniden kullanılacak); profil yoksa `/plan` buraya yönlenir; API: `GET /api/catalog/categories`, `GET/PUT /api/me/spend-profile` (PUT profili bütünüyle değiştirir)
 - [x] "Kartlarım" ve "Profilim" düzenleme sayfaları — `/kartlarim` (ekle / düzenle / kaldır, onboarding ile ortak `components/card-manager.tsx`), `/profil` (harcama profili + hesap bilgisi); API: `PATCH /api/me/cards/{id}`
-- [ ] Admin: katalog CRUD (banka/program/kart/kazanç oranı), rol tabanlı erişim
+- [x] Admin: katalog CRUD (banka/program/kart/kazanç oranı), rol tabanlı erişim — `/admin/katalog` (program ve kart sayfalarında "kaynaktan doğrulandı" işareti), `requireAdmin` / `withAdmin`, işlem kaydı (`AdminAuditLog`); ADR 0006
 
 **Kabul:** yeni kullanıcı 3 dakikadan kısa sürede kartlarını ve harcama profilini girebiliyor.
 
@@ -312,6 +312,24 @@ model SpendProfile {
   @@unique([userId, categoryId])
 }
 
+// --- Admin işlem kaydı: kim, neyi, ne zaman değiştirdi / doğruladı (güvenlik listesi) ---
+// Kayıtlar silinmez; admin hesabı silinse bile kalır (actorId boşalır, actorEmail saklanır).
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorEmail String
+  action     String // "bank.create", "card.update", "card.verify_rates" ...
+  entityType String // "Bank" | "Program" | "CardProduct"
+  entityId   String
+  data       Json     @default("{}") // değişen alanlar (önce/sonra)
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+  @@index([createdAt])
+}
+
 model Campaign {
   id           String         @id @default(cuid())
   programId    String
@@ -396,24 +414,24 @@ Faz 2'de `Transaction` (kullanıcı, kart, tutar, tarih, kategori, kaynak) eklen
 
 Tüm endpoint'ler `apps/web/app/api` altındadır, istek/yanıt gövdeleri `packages/shared` içindeki zod şemalarıyla doğrulanır. Python motoru dışarıya açılmaz; yalnızca web sunucusu çağırır.
 
-| Yöntem                      | Yol                                             | Ne yapar                                  | Sprint |
-| --------------------------- | ----------------------------------------------- | ----------------------------------------- | ------ |
-| GET                         | `/api/catalog/banks`                            | Banka → program → kart ağacı (onboarding) | 1      |
-| GET                         | `/api/catalog/categories`                       | Kategori ve marka listesi                 | 1      |
-| GET / POST / PATCH / DELETE | `/api/me/cards`, `/api/me/cards/{id}`           | Kullanıcının kartları                     | 1      |
-| GET / PUT                   | `/api/me/spend-profile`                         | Kategori başına aylık tutar ve markalar   | 1      |
-| GET                         | `/api/me/campaigns?card=&category=&type=&sort=` | Kişiye eşleşen aktif kampanyalar          | 3      |
-| PATCH                       | `/api/me/campaigns/{id}`                        | `joined` / `inPlan` işaretleme            | 3      |
-| GET                         | `/api/me/plan?month=2026-11`                    | Kayıtlı plan (yoksa hesaplar)             | 4      |
-| POST                        | `/api/me/plan/recompute`                        | Planı yeniden hesapla                     | 4      |
-| GET / PUT                   | `/api/me/notifications`                         | Bildirim tercihleri                       | 5      |
-| GET                         | `/api/me/export`                                | KVKK veri indirme (JSON)                  | 5      |
-| DELETE                      | `/api/me`                                       | Hesap silme (30 gün içinde kalıcı)        | 5      |
-| GET                         | `/api/admin/review-queue`                       | Onay bekleyen kampanyalar                 | 2      |
-| PUT                         | `/api/admin/campaigns/{id}`                     | Kural düzenle, onayla / reddet            | 2      |
-| CRUD                        | `/api/admin/catalog/*`                          | Banka, program, kart, kazanç oranı        | 1      |
-| POST                        | `engine:/optimize` (iç ağ)                      | `PlanRequest` → `PlanResponse`            | 4      |
-| POST                        | `engine:/pipeline/run` (iç ağ, cron)            | Adaptörleri çalıştırır                    | 2      |
+| Yöntem                      | Yol                                                                      | Ne yapar                                  | Sprint |
+| --------------------------- | ------------------------------------------------------------------------ | ----------------------------------------- | ------ |
+| GET                         | `/api/catalog/banks`                                                     | Banka → program → kart ağacı (onboarding) | 1      |
+| GET                         | `/api/catalog/categories`                                                | Kategori ve marka listesi                 | 1      |
+| GET / POST / PATCH / DELETE | `/api/me/cards`, `/api/me/cards/{id}`                                    | Kullanıcının kartları                     | 1      |
+| GET / PUT                   | `/api/me/spend-profile`                                                  | Kategori başına aylık tutar ve markalar   | 1      |
+| GET                         | `/api/me/campaigns?card=&category=&type=&sort=`                          | Kişiye eşleşen aktif kampanyalar          | 3      |
+| PATCH                       | `/api/me/campaigns/{id}`                                                 | `joined` / `inPlan` işaretleme            | 3      |
+| GET                         | `/api/me/plan?month=2026-11`                                             | Kayıtlı plan (yoksa hesaplar)             | 4      |
+| POST                        | `/api/me/plan/recompute`                                                 | Planı yeniden hesapla                     | 4      |
+| GET / PUT                   | `/api/me/notifications`                                                  | Bildirim tercihleri                       | 5      |
+| GET                         | `/api/me/export`                                                         | KVKK veri indirme (JSON)                  | 5      |
+| DELETE                      | `/api/me`                                                                | Hesap silme (30 gün içinde kalıcı)        | 5      |
+| GET                         | `/api/admin/review-queue`                                                | Onay bekleyen kampanyalar                 | 2      |
+| PUT                         | `/api/admin/campaigns/{id}`                                              | Kural düzenle, onayla / reddet            | 2      |
+| CRUD                        | `/api/admin/catalog`, `/api/admin/catalog/{banks,programs,cards}[/{id}]` | Banka, program, kart, kazanç oranı        | 1      |
+| POST                        | `engine:/optimize` (iç ağ)                                               | `PlanRequest` → `PlanResponse`            | 4      |
+| POST                        | `engine:/pipeline/run` (iç ağ, cron)                                     | Adaptörleri çalıştırır                    | 2      |
 
 Kimlik doğrulama: `/api/me/*` oturum ister, `/api/admin/*` ek olarak `role = ADMIN` ister; motor ile web arası paylaşılan gizli anahtar (`ENGINE_TOKEN`) ile korunur.
 
@@ -596,7 +614,7 @@ Bir görev ancak aşağıdaki "tamamlandı" tanımını karşılıyorsa kapanır
 - [ ] Gizli anahtarlar yalnızca ortam değişkenlerinde; repoda gizli tarama (gitleaks) CI adımı
 - [ ] Tüm API girdileri zod ile doğrulanıyor; Prisma dışında ham SQL yok
 - [ ] Rate limiting (giriş, magic link, plan hesaplama)
-- [ ] Admin rotaları rol kontrolü + işlem kaydı (kim neyi onayladı)
+- [x] Admin rotaları rol kontrolü + işlem kaydı (kim neyi onayladı) — katalog için tamam; Sprint 2 kampanya onayları da aynı kayda yazılmalı
 - [ ] Güvenlik başlıkları (CSP, HSTS), HTTPS zorunlu
 - [ ] Bağımlılık taraması (Dependabot / Renovate)
 - [ ] Günlük veritabanı yedeği + geri yükleme bir kez denendi

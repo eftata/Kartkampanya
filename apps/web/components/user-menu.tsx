@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth/session";
@@ -14,6 +16,11 @@ export async function UserMenu() {
 
   return (
     <div className="flex items-center gap-3 text-sm">
+      {user.role === "ADMIN" && (
+        <Link href="/admin/katalog" className="text-muted-foreground hover:text-foreground">
+          Admin
+        </Link>
+      )}
       <span className="text-muted-foreground hidden sm:inline" data-testid="user-email">
         {user.email}
       </span>

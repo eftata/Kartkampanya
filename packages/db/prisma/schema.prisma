@@ -12,20 +12,21 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
-  emailVerified DateTime? // Auth.js: magic link ile doğrulanınca dolar
-  name          String?
-  image         String? // Auth.js: Google profil fotoğrafı
-  role          Role           @default(USER)
-  createdAt     DateTime       @default(now())
-  deletedAt     DateTime? // KVKK: hesap silme talebi; 30 gün sonra kalıcı silinir
-  accounts      Account[]
-  sessions      Session[]
-  consents      Consent[]
-  cards         UserCard[]
-  spend         SpendProfile[]
-  notifyPrefs   Json           @default("{}")
+  id             String          @id @default(cuid())
+  email          String          @unique
+  emailVerified  DateTime? // Auth.js: magic link ile doğrulanınca dolar
+  name           String?
+  image          String? // Auth.js: Google profil fotoğrafı
+  role           Role            @default(USER)
+  createdAt      DateTime        @default(now())
+  deletedAt      DateTime? // KVKK: hesap silme talebi; 30 gün sonra kalıcı silinir
+  accounts       Account[]
+  sessions       Session[]
+  consents       Consent[]
+  cards          UserCard[]
+  spend          SpendProfile[]
+  notifyPrefs    Json            @default("{}")
+  adminAuditLogs AdminAuditLog[]
 }
 
 enum Role {
@@ -152,6 +153,24 @@ model SpendProfile {
   merchantIds  String[] // tercih edilen markalar (Merchant.id)
 
   @@unique([userId, categoryId])
+}
+
+// --- Admin işlem kaydı: kim, neyi, ne zaman değiştirdi / doğruladı (güvenlik listesi) ---
+// Kayıtlar silinmez; admin hesabı silinse bile kalır (actorId boşalır, actorEmail saklanır).
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorEmail String
+  action     String // "bank.create", "card.update", "card.verify_rates" ...
+  entityType String // "Bank" | "Program" | "CardProduct"
+  entityId   String
+  data       Json     @default("{}") // değişen alanlar (önce/sonra)
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+  @@index([createdAt])
 }
 
 // --- Auth.js (@auth/prisma-adapter) tabloları; alan adları adaptörün beklediği biçimdedir ---

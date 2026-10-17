@@ -1,4 +1,10 @@
+import path from "node:path";
+
 import { defineConfig, devices } from "@playwright/test";
+import { config } from "dotenv";
+
+// Test süreci (ör. e2e/helpers.ts → makeAdmin) veritabanına kök .env ile bağlanır; CI'da ortamdan gelir.
+config({ path: path.resolve(import.meta.dirname, "../../.env"), quiet: true });
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 const baseURL = `http://localhost:${PORT}`;

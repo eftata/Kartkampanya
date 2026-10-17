@@ -118,6 +118,20 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
 - DB testleri `apps/web` Vitest'inde de çalışır (kök `.env`; `server-only` testte etkisiz).
 - e2e testleri seed edilmiş kataloğa dayanır (`pnpm db:seed`); giriş için `e2e/helpers.ts → signUp`.
 
+## Admin — ayrıntı: docs/adr/0006-admin-catalog.md
+
+- Rol: `requireAdmin()` (sayfa/action; admin değilse 404), `withAdmin()` (API; 401/403). Admin
+  layout'u başlık dahil her şeyi rol doğrulandıktan sonra çizer; admin sayfaları `metadata` başlığı
+  taşımaz (statik iskelette admin izi kalmasın). İlk admin: `SEED_ADMIN_EMAIL` + `pnpm db:seed`.
+- Katalog değişiklikleri `lib/admin-catalog.ts` üzerinden, her biri transaction içinde
+  `AdminAuditLog`'a yazılır (`actorEmail`, önce/sonra farkı). Yeni admin işlemi de kayıt yazmalı.
+- Doğrulama kuralı: `verified: true` → tarih yazılır (değer değişmediyse eskisi korunur);
+  `false` → temizlenir; gönderilmezse değer değiştiyse temizlenir.
+- Oran girişi yüzde (`parsePercentInput("0,5")` → 50 bps), gösterimi `formatBps`.
+- Admin formları `components/admin/action-form.tsx` (hata alınca girilen değerler korunur).
+- e2e'de admin: `e2e/helpers.ts → makeAdmin(email)`. Next 16 önceki sayfaları gizli tutar
+  (`<Activity>`); sayımlı assertion'larda `filter({ visible: true })` kullan.
+
 ## Mimari kurallar
 
 - `apps/web`: iş mantığı `lib/` altında; route dosyaları (`app/**/route.ts`, `page.tsx`) ince kalır.

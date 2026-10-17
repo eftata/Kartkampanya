@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { Session } from "next-auth";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 
 import { auth } from "@/auth";
@@ -23,5 +23,15 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 export async function requireUser(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) redirect(SIGNED_OUT_REDIRECT);
+  return user;
+}
+
+/**
+ * Yalnızca ADMIN rolü. Admin olmayan kullanıcıya sayfanın varlığını göstermemek için 404 döner.
+ * Rol her istekte veritabanından okunur (veritabanı oturumları), yetki değişikliği hemen geçerlidir.
+ */
+export async function requireAdmin(): Promise<CurrentUser> {
+  const user = await requireUser();
+  if (user.role !== "ADMIN") notFound();
   return user;
 }
