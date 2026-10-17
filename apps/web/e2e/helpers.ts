@@ -31,11 +31,17 @@ export async function makeAdmin(email: string): Promise<void> {
   }
 }
 
-/** Veri hattının yazacağı gibi DRAFT kampanya oluşturur (seed'deki "bonus" programında). */
-export async function createDraftCampaign(title: string): Promise<string> {
+/** Veri hattının yazacağı gibi kampanya oluşturur (seed'deki "bonus" programında; varsayılan DRAFT). */
+export async function createDraftCampaign(
+  title: string,
+  options: { status?: "DRAFT" | "APPROVED"; categorySlug?: string } = {},
+): Promise<string> {
   const prisma = createPrismaClient();
   try {
     const program = await prisma.program.findUniqueOrThrow({ where: { slug: "bonus" } });
+    const category = options.categorySlug
+      ? await prisma.category.findUniqueOrThrow({ where: { slug: options.categorySlug } })
+      : null;
     const campaign = await prisma.campaign.create({
       data: {
         programId: program.id,
@@ -49,12 +55,13 @@ export async function createDraftCampaign(title: string): Promise<string> {
         startsAt: new Date("2099-01-01T00:00:00Z"),
         endsAt: new Date("2099-01-31T00:00:00Z"),
         joinMethod: "APP",
+        status: options.status ?? "DRAFT",
         confidence: 0.62,
         uncertainFields: ["rules[0].cap_kurus", "merchant:Örnek Market"],
         rules: {
           create: [
             {
-              categoryIds: [],
+              categoryIds: category ? [category.id] : [],
               merchantIds: [],
               thresholdType: "CUMULATIVE",
               thresholdKurus: 250_000,

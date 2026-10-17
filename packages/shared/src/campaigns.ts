@@ -112,3 +112,53 @@ export const AdminCampaignReview = z.discriminatedUnion("action", [
     .strict(),
 ]);
 export type AdminCampaignReview = z.infer<typeof AdminCampaignReview>;
+
+// ---------- Kişisel kampanya listesi (Sprint 3) ----------
+
+export const CampaignSort = z.enum(["ends", "gain"]);
+export type CampaignSort = z.infer<typeof CampaignSort>;
+
+/** `GET /api/me/campaigns?card=&category=&type=&sort=` (boş parametre = filtre yok). */
+export const MyCampaignsQuery = z
+  .object({
+    /** Kullanıcının kartı (`UserCard.id`). */
+    card: z.string().min(1).optional(),
+    /** Ana kategori (`Category.id`). */
+    category: z.string().min(1).optional(),
+    type: RewardType.optional(),
+    /** `ends`: bitişi yakın önce (varsayılan) · `gain`: tahmini kazancı yüksek önce. */
+    sort: CampaignSort.default("ends"),
+  })
+  .strict();
+export type MyCampaignsQuery = z.infer<typeof MyCampaignsQuery>;
+
+export const MyCampaignDto = z.object({
+  id: z.string(),
+  title: z.string(),
+  summary: z.array(z.string()),
+  sourceUrl: z.string(),
+  bankName: z.string(),
+  programName: z.string(),
+  startsAt: DateOnly,
+  endsAt: DateOnly,
+  joinMethod: JoinMethod,
+  joinDeadline: DateOnly.nullable(),
+  /** Kampanyanın geçerli olduğu kullanıcı kartları. */
+  cards: z.array(z.object({ id: z.string(), name: z.string() })),
+  /** Kampanyanın dokunduğu, kullanıcının harcama profilindeki ana kategoriler. */
+  categories: z.array(z.object({ id: z.string(), name: z.string() })),
+  rewardTypes: z.array(RewardType),
+  /**
+   * Kaba tahmin (kuruş): kampanyanın kalan süresinde, profildeki aylık harcamayla tek başına
+   * kazanılabilecek en yüksek ödül. Harcama kampanyalar arasında bölüştürülmez; bunu plan yapar.
+   */
+  estimateKurus: Kurus,
+  /** Etiketler: katılım gerekiyor (AUTO değil), son 7 gün, henüz başlamadı. */
+  joinRequired: z.boolean(),
+  endingSoon: z.boolean(),
+  upcoming: z.boolean(),
+});
+export type MyCampaignDto = z.infer<typeof MyCampaignDto>;
+
+export const MyCampaignsResponse = z.object({ campaigns: z.array(MyCampaignDto) });
+export type MyCampaignsResponse = z.infer<typeof MyCampaignsResponse>;

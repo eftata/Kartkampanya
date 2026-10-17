@@ -121,7 +121,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 ### Sprint 3 — Kişisel kampanya listesi
 
 - [ ] Kalan 3 adaptör; süresi dolan kampanyaları otomatik kapatma — **kapatma tamam**: günlük iş (`python -m engine.pipeline`) taramadan sonra bitiş günü geçmiş (Türkiye takvimi, `endsAt` dahil) onaylı ve taslak kampanyaları `EXPIRED` yapar, reddedilenlere dokunmaz (ADR 0011). Adaptörler bekliyor (banka siteleri bu ortamda engelli)
-- [ ] Eşleştirme servisi: kullanıcının kartları × seçtiği kategoriler × aktif kampanyalar
+- [x] Eşleştirme servisi: kullanıcının kartları × seçtiği kategoriler × aktif kampanyalar — `lib/campaign-match.ts` (saf kurallar: kart kapsamı, ana kategoriye indirgeme, kaba kazanç tahmini) + `lib/campaigns.ts → getMyCampaigns`; API: `GET /api/me/campaigns?card=&category=&type=&sort=ends|gain`; ADR 0014
 - [ ] Kampanyalar sayfası: filtre (kart, kategori, fayda tipi), sıralama (bitiş tarihi, tahmini kazanç)
 - [ ] Etiketler: "katılım gerekli", "bitmek üzere", "plana dahil"
 - [ ] "Katıldım" işaretleme (`UserCampaignStatus`) ve bankanın kampanya sayfasına link

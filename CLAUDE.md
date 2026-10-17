@@ -147,6 +147,9 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   programdaki tüm kartlar), `PipelineRun` (RUNNING → SUCCEEDED/FAILED).
 - Kampanya kapsamındaki kart ürünü ve kampanyası/kaynağı olan program silinemez.
 - Onay/ret işlemleri `AdminAuditLog`'a (`entityType = "Campaign"`) yazılır.
+- Kişisel liste (ADR 0014): kurallar `lib/campaign-match.ts` (saf; kart kapsamı, ana kategoriye
+  indirgeme, kaba tahmin), veri `lib/campaigns.ts → getMyCampaigns`. Yalnızca `APPROVED`, bitmemiş,
+  katılım süresi geçmemiş; "bugün" `turkeyToday()` (UTC+3).
 - Onay kuyruğu (ADR 0012): iş mantığı `lib/admin-campaigns.ts` (`reviewCampaign`: `save` durumu
   değiştirmez, `approve`, `reject`; kurallar ve kart kapsamı bütünüyle değişir). Form durumu metin
   (`lib/campaign-draft.ts` → `draftToInput`), şemalar `packages/shared/src/campaigns.ts`
