@@ -13,7 +13,7 @@ from engine.pipeline.changes import Change
 from engine.pipeline.run import run_source
 from engine.pipeline.store import CampaignStore, connect, new_id
 from engine.settings import Settings
-from tests.ornek import FixtureFetcher, OrnekAdapter
+from tests.ornek import ORNEK_EXTRACTION, FixtureFetcher, OrnekAdapter, ScriptedLlm
 
 FIXTURES = Path(__file__).parent / "fixtures"
 SETTINGS = Settings()
@@ -78,35 +78,6 @@ def pages(adapter_cls: type[OrnekAdapter]) -> dict[str, str]:
     }
 
 
-async def save_as_extracted(conn: Conn, adapter_cls: type[OrnekAdapter], report: Any) -> None:
-    """Ayıklama adımı henüz yok: bekleyen kampanyaları ayıklanmış gibi kaydeder (ilki onaylı)."""
-    source = await (
-        await conn.execute(
-            'SELECT "id", "programId" FROM "CampaignSource" WHERE "adapter" = %s',
-            (adapter_cls.adapter,),
-        )
-    ).fetchone()
-    assert source
-    for index, item in enumerate(report.pending):
-        await conn.execute(
-            'INSERT INTO "Campaign" ("id", "programId", "sourceId", "title", "sourceUrl", '
-            '"rawText", "rawHash", "startsAt", "endsAt", "joinMethod", "status", "updatedAt") '
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'APP', %s::\"CampaignStatus\", now())",
-            (
-                new_id(),
-                source["programId"],
-                source["id"],
-                item.raw.title,
-                item.raw.source_url,
-                item.raw.raw_text,
-                item.raw_hash,
-                datetime(2026, 11, 1),
-                datetime(2026, 11, 30),
-                "APPROVED" if index == 0 else "DRAFT",
-            ),
-        )
-
-
 async def run_row(conn: Conn, run_id: str | None) -> dict[str, Any]:
     row = await (
         await conn.execute(
@@ -119,55 +90,163 @@ async def run_row(conn: Conn, run_id: str | None) -> dict[str, Any]:
     return row
 
 
-async def test_first_run_registers_source_and_marks_everything_new(
+async def campaign_row(conn: Conn, source_url: str) -> dict[str, Any]:
+    row = await (
+        await conn.execute(
+            'SELECT "id", "status"::text AS "status", "rawText", "rawHash", "summary", '
+            '"joinMethod"::text AS "joinMethod", "joinDeadline", "confidence", '
+            '"uncertainFields", "startsAt", "endsAt", "sourceId", "programId" '
+            'FROM "Campaign" WHERE "sourceUrl" = %s',
+            (source_url,),
+        )
+    ).fetchone()
+    assert row
+    return row
+
+
+async def rule_rows(conn: Conn, campaign_id: str) -> list[dict[str, Any]]:
+    cursor = await conn.execute(
+        'SELECT "categoryIds", "merchantIds", "thresholdType"::text AS "thresholdType", '
+        '"thresholdKurus", "txnCount", "tierRepeat", "rewardType"::text AS "rewardType", '
+        '"rewardKurus", "rewardBps", "capKurus", "exclusions" '
+        'FROM "CampaignRule" WHERE "campaignId" = %s',
+        (campaign_id,),
+    )
+    return await cursor.fetchall()
+
+
+async def test_first_run_extracts_and_saves_new_campaigns_as_draft(
     db: tuple[Conn, type[OrnekAdapter]],
 ) -> None:
     conn, adapter_cls = db
+    llm = ScriptedLlm()
     report = await run_source(
-        adapter_cls(), FixtureFetcher(pages(adapter_cls)), CampaignStore(conn)
+        adapter_cls(), FixtureFetcher(pages(adapter_cls)), CampaignStore(conn), llm
     )
     assert report.status == "SUCCEEDED"
     assert report.found == 2 and report.unchanged == 0
     assert [p.change for p in report.pending] == [Change.NEW, Change.NEW]
-    assert all(p.campaign_id is None for p in report.pending)
+    assert len(report.saved) == 2 and len(llm.prompts) == 2
     row = await run_row(conn, report.run_id)
     assert row["status"] == "SUCCEEDED" and row["found"] == 2 and row["changed"] == 2
-    assert row["finishedAt"] is not None
+    assert row["finishedAt"] is not None and row["errors"] is None
+
+    item = report.pending[0]
+    campaign = await campaign_row(conn, item.raw.source_url)
+    assert campaign["status"] == "DRAFT"
+    assert campaign["rawHash"] == item.raw_hash
+    assert campaign["summary"] == ORNEK_EXTRACTION["summary"]
+    assert campaign["joinMethod"] == "APP"
+    assert campaign["joinDeadline"] == datetime(2026, 11, 30)
+    assert campaign["confidence"] == 0.9 and campaign["uncertainFields"] == []
+    assert (campaign["startsAt"], campaign["endsAt"]) == (
+        datetime(2026, 11, 1),
+        datetime(2026, 11, 30),
+    )
+    assert campaign["sourceId"] and campaign["programId"]
+    assert await rule_rows(conn, campaign["id"]) == [
+        {
+            "categoryIds": [],
+            "merchantIds": [],
+            "thresholdType": "CUMULATIVE",
+            "thresholdKurus": 250000,
+            "txnCount": None,
+            "tierRepeat": True,
+            "rewardType": "POINTS",
+            "rewardKurus": 10000,
+            "rewardBps": None,
+            "capKurus": 30000,
+            "exclusions": ["taksitli"],
+        }
+    ]
 
 
-async def test_unchanged_text_is_not_reextracted_and_changed_text_goes_back_to_draft(
+async def test_unchanged_text_is_not_reextracted_and_changed_text_is_reextracted_as_draft(
     db: tuple[Conn, type[OrnekAdapter]],
 ) -> None:
     conn, adapter_cls = db
     store = CampaignStore(conn)
-    first = await run_source(adapter_cls(), FixtureFetcher(pages(adapter_cls)), store)
-    await save_as_extracted(conn, adapter_cls, first)
+    first = await run_source(
+        adapter_cls(), FixtureFetcher(pages(adapter_cls)), store, ScriptedLlm()
+    )
+    approved_url = first.pending[0].raw.source_url
+    await conn.execute(
+        'UPDATE "Campaign" SET "status" = \'APPROVED\' WHERE "sourceUrl" = %s', (approved_url,)
+    )
 
-    second = await run_source(adapter_cls(), FixtureFetcher(pages(adapter_cls)), store)
-    assert second.unchanged == 2 and second.pending == []
+    llm = ScriptedLlm()
+    second = await run_source(adapter_cls(), FixtureFetcher(pages(adapter_cls)), store, llm)
+    assert second.unchanged == 2 and second.pending == [] and llm.prompts == []
     assert (await run_row(conn, second.run_id))["changed"] == 0
 
-    # Onaylı kampanyanın (ilk) metni değişir → DRAFT'a çekilir ve yeniden ayıklanmak üzere döner.
-    approved_url = first.pending[0].raw.source_url
+    # Onaylı kampanyanın metni değişir → yeniden ayıklanır, kuralları yenilenir, DRAFT olur.
     changed_pages = pages(adapter_cls)
     changed_pages[approved_url] = changed_pages[approved_url].replace(
         "En fazla 300 TL", "En fazla 500 TL"
     )
-    third = await run_source(adapter_cls(), FixtureFetcher(changed_pages), store)
+    new_output = ORNEK_EXTRACTION | {
+        "rules": [ORNEK_EXTRACTION["rules"][0] | {"cap_kurus": 50000}],
+        "summary": ["Markette toplam 2.500 TL harcamaya 100 TL puan", "En fazla 500 TL"],
+    }
+    third = await run_source(
+        adapter_cls(), FixtureFetcher(changed_pages), store, ScriptedLlm(new_output)
+    )
     assert third.unchanged == 1
     assert [(p.change, p.raw.source_url) for p in third.pending] == [(Change.CHANGED, approved_url)]
-    assert third.pending[0].campaign_id is not None
+    campaign = await campaign_row(conn, approved_url)
+    assert third.saved == [campaign["id"]] == [third.pending[0].campaign_id]
+    assert campaign["status"] == "DRAFT"
+    assert "En fazla 500 TL" in campaign["rawText"]
+    assert campaign["rawHash"] == third.pending[0].raw_hash
+    assert campaign["summary"][1] == "En fazla 500 TL"
+    rules = await rule_rows(conn, campaign["id"])
+    assert [r["capKurus"] for r in rules] == [50000]  # eski kural silindi
 
-    row = await (
-        await conn.execute(
-            'SELECT "status"::text AS "status", "rawText", "rawHash" FROM "Campaign" '
-            'WHERE "sourceUrl" = %s',
-            (approved_url,),
-        )
-    ).fetchone()
-    assert row and row["status"] == "DRAFT"
-    assert "En fazla 500 TL" in row["rawText"]
-    assert row["rawHash"] == third.pending[0].raw_hash
+
+async def test_failed_extraction_unpublishes_but_keeps_old_hash_for_retry(
+    db: tuple[Conn, type[OrnekAdapter]],
+) -> None:
+    conn, adapter_cls = db
+    store = CampaignStore(conn)
+    first = await run_source(
+        adapter_cls(), FixtureFetcher(pages(adapter_cls)), store, ScriptedLlm()
+    )
+    url = first.pending[0].raw.source_url
+    await conn.execute(
+        'UPDATE "Campaign" SET "status" = \'APPROVED\' WHERE "sourceUrl" = %s', (url,)
+    )
+    old = await campaign_row(conn, url)
+
+    changed_pages = pages(adapter_cls)
+    changed_pages[url] = changed_pages[url].replace("En fazla 300 TL", "En fazla 500 TL")
+    failed = await run_source(
+        adapter_cls(), FixtureFetcher(changed_pages), store, ScriptedLlm(refuse_if="500 TL")
+    )
+    assert failed.status == "SUCCEEDED" and failed.saved == []
+    assert failed.errors == [{"url": url, "message": "LLM isteği reddetti"}]
+    assert (await run_row(conn, failed.run_id))["changed"] == 0
+    campaign = await campaign_row(conn, url)
+    assert campaign["status"] == "DRAFT"  # yayından hemen kalktı
+    assert campaign["rawHash"] == old["rawHash"]  # özet eski: ertesi gün yeniden denenir
+    assert len(await rule_rows(conn, campaign["id"])) == 1
+
+    retry = await run_source(adapter_cls(), FixtureFetcher(changed_pages), store, ScriptedLlm())
+    assert [p.change for p in retry.pending] == [Change.CHANGED]
+    assert retry.saved == [campaign["id"]]
+    assert (await campaign_row(conn, url))["rawHash"] == retry.pending[0].raw_hash
+
+
+async def test_new_campaign_without_dates_is_not_sent_to_llm(
+    db: tuple[Conn, type[OrnekAdapter]],
+) -> None:
+    conn, adapter_cls = db
+    undated = pages(adapter_cls)
+    url = next(u for u in undated if u.endswith("akaryakit"))
+    undated[url] = undated[url].replace("1-30 Kasım 2026", "kampanya süresince")
+    llm = ScriptedLlm()
+    report = await run_source(adapter_cls(), FixtureFetcher(undated), CampaignStore(conn), llm)
+    assert len(report.pending) == 2 and len(report.saved) == 1 and len(llm.prompts) == 1
+    assert report.errors == [{"url": url, "message": "Tarih aralığı okunamadı."}]
 
 
 async def test_page_errors_are_recorded_and_list_errors_fail_the_run(
@@ -178,12 +257,12 @@ async def test_page_errors_are_recorded_and_list_errors_fail_the_run(
     broken = pages(adapter_cls)
     missing_url = next(url for url in broken if url.endswith("akaryakit"))
     del broken[missing_url]
-    report = await run_source(adapter_cls(), FixtureFetcher(broken), store)
-    assert report.status == "SUCCEEDED" and len(report.pending) == 1
+    report = await run_source(adapter_cls(), FixtureFetcher(broken), store, ScriptedLlm())
+    assert report.status == "SUCCEEDED" and len(report.saved) == 1
     assert report.errors == [{"url": missing_url, "message": f"{missing_url}: HTTP 404"}]
     assert (await run_row(conn, report.run_id))["errors"] == report.errors
 
-    failed = await run_source(adapter_cls(), FixtureFetcher({}), store)
+    failed = await run_source(adapter_cls(), FixtureFetcher({}), store, ScriptedLlm())
     assert failed.status == "FAILED"
     assert (await run_row(conn, failed.run_id))["status"] == "FAILED"
 
@@ -193,12 +272,13 @@ async def test_inactive_source_is_skipped_without_a_run_record(
 ) -> None:
     conn, adapter_cls = db
     store = CampaignStore(conn)
-    await run_source(adapter_cls(), FixtureFetcher(pages(adapter_cls)), store)
+    await run_source(adapter_cls(), FixtureFetcher(pages(adapter_cls)), store, ScriptedLlm())
     await conn.execute(
         'UPDATE "CampaignSource" SET "active" = false WHERE "adapter" = %s', (adapter_cls.adapter,)
     )
-    report = await run_source(adapter_cls(), FixtureFetcher(pages(adapter_cls)), store)
-    assert report.status == "SKIPPED" and report.run_id is None
+    llm = ScriptedLlm()
+    report = await run_source(adapter_cls(), FixtureFetcher(pages(adapter_cls)), store, llm)
+    assert report.status == "SKIPPED" and report.run_id is None and llm.prompts == []
 
 
 async def test_load_catalog(db: tuple[Conn, type[OrnekAdapter]]) -> None:

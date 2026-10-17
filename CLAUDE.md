@@ -158,8 +158,11 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   (`tests/fixtures/<adaptör>-*.html`). Gerçek HTML görülmeden seçici yazılmaz; sentetik fixture'lar
   yalnızca taban sınıfı test eder ve dosya başında "SENTETİK" yazar.
 - Değişiklik tespiti: `content_hash` (başlık + tarih + metin, boşluk farkları yok sayılır). Aynıysa
-  yalnızca `lastSeenAt` güncellenir; değiştiyse kampanya `DRAFT`'a çekilir. `run_source` yeni ve
-  değişenleri `pending` olarak döndürür (ayıklama sonraki adım).
+  yalnızca `lastSeenAt` güncellenir; değiştiyse kampanya `DRAFT`'a çekilir.
+- `run_source(adapter, fetcher, store, llm)`: yeni/değişen kampanyaları ayıklar ve
+  `save_extraction` ile kurallarla tek işlemde DRAFT yazar. Değişen kampanyanın yeni metni/özeti
+  yalnızca ayıklama başarılıysa yazılır (başarısızsa ertesi gün yeniden denenir; ADR 0011).
+  Testlerde LLM: `tests/ornek.py → ScriptedLlm`. Günlük iş: `python -m engine.pipeline [adaptör ...]`.
 - DB erişimi yalnızca `pipeline/store.py` (`CampaignStore`, `connect`). `id` ve `updatedAt` Prisma'da
   uygulama tarafında üretilir; Python bunları açıkça yazar. Zaman damgaları UTC, saat dilimsiz.
 - DB testleri `DATABASE_URL` yoksa atlanır; CI'da `ENGINE_DB_TESTS=required` atlanmayı yasaklar

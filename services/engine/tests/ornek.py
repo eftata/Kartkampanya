@@ -1,8 +1,12 @@
-"""Testlere özel sentetik adaptör ve ağsız fetcher (gerçek banka değil)."""
+"""Testlere özel sentetik adaptör, ağsız fetcher ve sahte LLM (gerçek banka/API değil)."""
+
+import json
+from typing import Any
 
 from selectolax.lexbor import LexborHTMLParser
 
 from engine.pipeline.adapters import BankAdapter, RawCampaign
+from engine.pipeline.extract import LlmReply
 from engine.pipeline.fetcher import FetchError
 from engine.pipeline.text import find_date_range, html_to_text
 
@@ -43,3 +47,43 @@ class FixtureFetcher:
         if url not in self.pages:
             raise FetchError(f"{url}: HTTP 404")
         return self.pages[url]
+
+
+# SENTETİK ayıklama çıktısı: sentetik detay sayfasındaki market kampanyasına karşılık gelir.
+ORNEK_EXTRACTION: dict[str, Any] = {
+    "join_method": "APP",
+    "join_deadline": "2026-11-30",
+    "summary": ["Markette toplam 2.500 TL harcamaya 100 TL puan", "En fazla 300 TL"],
+    "rules": [
+        {
+            "categories": [],
+            "merchants": [],
+            "threshold_type": "CUMULATIVE",
+            "threshold_kurus": 250000,
+            "txn_count": None,
+            "tier_repeat": True,
+            "reward_type": "POINTS",
+            "reward_kurus": 10000,
+            "reward_bps": None,
+            "cap_kurus": 30000,
+            "exclusions": ["taksitli"],
+        }
+    ],
+    "confidence": 0.9,
+    "uncertain_fields": [],
+}
+
+
+class ScriptedLlm:
+    """Her isteme `output` döner; istemde `refuse_if` geçiyorsa reddeder. Çağrıları sayar."""
+
+    def __init__(self, output: dict[str, Any] = ORNEK_EXTRACTION, refuse_if: str = "") -> None:
+        self.output = output
+        self.refuse_if = refuse_if
+        self.prompts: list[str] = []
+
+    async def complete(self, *, system: str, prompt: str, schema: dict[str, Any]) -> LlmReply:
+        self.prompts.append(prompt)
+        if self.refuse_if and self.refuse_if in prompt:
+            return LlmReply(text="", stop_reason="refusal", model="fake")
+        return LlmReply(text=json.dumps(self.output), stop_reason="end_turn", model="fake")

@@ -62,6 +62,26 @@ CI (`.github/workflows/ci.yml`) her dala push'ta ve fork'lardan gelen PR'larda k
    curl -H "Authorization: Bearer $ENGINE_TOKEN" https://<motor>.up.railway.app/info
    ```
 
+### 2b. Railway: günlük veri hattı işi (Sprint 2)
+
+Kampanya taraması motorla aynı imajı kullanan ayrı bir **cron** servisidir (ADR 0011).
+
+1. Aynı projede **New → GitHub Repo** → bu repo; Root Directory ve Watch Paths motorla aynı.
+2. **Settings → Deploy → Custom Start Command:** `python -m engine.pipeline`
+3. **Settings → Cron Schedule:** günde bir kez, ör. `30 3 * * *` (UTC; bankalara gece, düşük
+   trafikte). Healthcheck Path boş kalır (iş HTTP dinlemez, bitince çıkar).
+4. **Variables:**
+
+   | Değişken              | Değer                                                         |
+   | --------------------- | ------------------------------------------------------------- |
+   | `DATABASE_URL`        | Railway Postgres `DATABASE_URL` (iç ağ adresi yeterli)        |
+   | `ANTHROPIC_API_KEY`   | Claude API anahtarı (yalnızca bu serviste)                    |
+   | `LLM_MODEL`           | (opsiyonel) varsayılan `claude-opus-5-5`                      |
+   | `PIPELINE_USER_AGENT` | `KartPlanBot/0.1 (+https://<alan-adı>; <iletişim e-postası>)` |
+
+5. Elle deneme: servis → **Run now**; loglarda her adaptör için
+   `bulunan · değişmeyen · ayıklanan · hata` satırı görünür, kayıtlar `PipelineRun` tablosunda.
+
 ## 3. E-posta (SMTP)
 
 Magic link için bir SMTP sağlayıcısı gerekir (ör. Resend, Postmark, Brevo; hepsinin SMTP arayüzü

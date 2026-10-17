@@ -16,13 +16,14 @@ yer; projede "Prisma dışında ham SQL yok" kuralı var, ama Python Prisma kull
   boşluk, satır düzeni ve görünmez karakter farkları yok sayılır (sayfa şablonundaki önemsiz
   değişiklikler yeni onay doğurmasın). Kaynak adresi özete girmez.
 - **Sınıflandırma:** veritabanında yok → yeni; özet aynı → değişmedi (yalnızca `lastSeenAt`); özet
-  farklı → değişti: yeni metin yazılır ve kampanya **hemen `DRAFT`'a çekilir** (onaylıysa yayından
-  kalkar). Eski kurallar yeniden ayıklamaya kadar kalır ama `DRAFT` kullanıcıya görünmez. Tarih
-  okunamazsa mevcut tarih korunur.
+  farklı → değişti: kampanya **hemen `DRAFT`'a çekilir** (onaylıysa yayından kalkar). Eski kurallar
+  yeniden ayıklamaya kadar kalır ama `DRAFT` kullanıcıya görünmez. Tarih okunamazsa mevcut tarih
+  korunur. _(Güncellendi, ADR 0011: yeni metin ve özet ayıklama başarılı olunca kurallarla birlikte
+  yazılır.)_
 - **`run_source`:** kaynağı bulur ya da oluşturur (kapalıysa atlar, çalıştırma kaydı açmaz),
   `PipelineRun` açar, listeyi ve detayları tarar; tek sayfanın hatası çalıştırmayı durdurmaz, kayda
   geçer; liste alınamazsa çalıştırma `FAILED`. Yeni ve değişen kampanyalar `pending` olarak döner;
-  LLM ayıklama ve kayıt sonraki adımdır.
+  ayıklama ve kayıt ADR 0011'de aynı çalıştırmaya eklendi.
 - **Python'un SQL'i tek modülde:** `engine/pipeline/store.py` (psycopg 3, parametreli sorgular,
   autocommit — her kampanya kendi işlemi). Şema değişmez; Prisma'nın uygulama tarafında ürettiği
   `id` (uuid4 hex) ve `updatedAt` açıkça yazılır; zaman damgaları UTC, saat dilimsiz. Prisma

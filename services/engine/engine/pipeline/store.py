@@ -18,7 +18,7 @@ from psycopg.types.json import Jsonb
 
 from engine.pipeline.adapters.base import RawCampaign
 from engine.pipeline.changes import StoredCampaign
-from engine.pipeline.extract import Catalog
+from engine.pipeline.extract import Catalog, ExtractionResult
 from engine.settings import Settings
 
 RunStatus = Literal["SUCCEEDED", "FAILED"]
@@ -138,26 +138,107 @@ class CampaignStore:
             'UPDATE "Campaign" SET "lastSeenAt" = %s WHERE "id" = %s', (seen_at, campaign_id)
         )
 
-    async def mark_changed(
-        self, campaign_id: str, raw: RawCampaign, raw_hash: str, seen_at: datetime
-    ) -> None:
-        """Metni değişen kampanya: yeni metin yazılır ve yeniden onaya düşer (DRAFT).
+    async def mark_changed(self, campaign_id: str, seen_at: datetime) -> None:
+        """Metni değişen kampanya hemen yayından kalkar (DRAFT).
 
-        Eski kurallar yeniden ayıklamaya kadar kalır ama DRAFT kampanya kullanıcıya görünmez.
-        Tarih okunamadıysa mevcut tarih korunur (sütunlar boş olamaz).
+        Yeni metin ve özet burada YAZILMAZ: ayıklama başarılı olunca `save_extraction` kurallarla
+        aynı işlemde yazar. Ayıklama başarısız olursa eski özet kalır ve kampanya ertesi
+        çalıştırmada yine "değişti" sayılıp yeniden denenir (ADR 0011).
         """
         await self._conn.execute(
-            'UPDATE "Campaign" SET "title" = %s, "rawText" = %s, "rawHash" = %s, '
-            '"startsAt" = COALESCE(%s, "startsAt"), "endsAt" = COALESCE(%s, "endsAt"), '
-            '"status" = \'DRAFT\', "lastSeenAt" = %s, "updatedAt" = %s WHERE "id" = %s',
-            (
-                raw.title,
-                raw.raw_text,
-                raw_hash,
-                _day(raw.starts_at) if raw.starts_at else None,
-                _day(raw.ends_at) if raw.ends_at else None,
-                seen_at,
-                seen_at,
-                campaign_id,
-            ),
+            'UPDATE "Campaign" SET "status" = \'DRAFT\', "lastSeenAt" = %s, "updatedAt" = %s '
+            'WHERE "id" = %s',
+            (seen_at, seen_at, campaign_id),
         )
+
+    async def save_extraction(
+        self,
+        *,
+        source_id: str,
+        campaign_id: str | None,
+        raw: RawCampaign,
+        raw_hash: str,
+        result: ExtractionResult,
+        seen_at: datetime,
+    ) -> str:
+        """Ayıklanan kampanyayı ve kurallarını tek işlemde DRAFT olarak yazar; kampanya id'si döner.
+
+        Yeni kampanya (`campaign_id` None) için tarih aralığı zorunludur. Var olan kampanyada eski
+        kurallar silinip yenileri yazılır; okunamayan tarih eskisini korur. Kart kapsamı
+        (`CampaignCard`) LLM'den gelmez: boş = programdaki tüm kartlar, admin daraltır.
+        """
+        extraction = result.extraction
+        starts_at = _day(raw.starts_at) if raw.starts_at else None
+        ends_at = _day(raw.ends_at) if raw.ends_at else None
+        join_deadline = _day(extraction.join_deadline) if extraction.join_deadline else None
+        fields = (
+            raw.title,
+            raw.raw_text,
+            raw_hash,
+            extraction.summary,
+            extraction.join_method,
+            join_deadline,
+            extraction.confidence,
+            extraction.uncertain_fields,
+        )
+        async with self._conn.transaction():
+            if campaign_id is None:
+                if starts_at is None or ends_at is None:
+                    raise ValueError("Yeni kampanyanın tarih aralığı okunamadı.")
+                campaign_id = new_id()
+                await self._conn.execute(
+                    'INSERT INTO "Campaign" ("id", "programId", "sourceId", "sourceUrl", '
+                    '"title", "rawText", "rawHash", "summary", "joinMethod", "joinDeadline", '
+                    '"confidence", "uncertainFields", "startsAt", "endsAt", "status", '
+                    '"lastSeenAt", "createdAt", "updatedAt") '
+                    'SELECT %s, "programId", "id", %s, '
+                    "%s, %s, %s, %s, %s::\"JoinMethod\", %s, %s, %s, %s, %s, 'DRAFT', %s, %s, %s "
+                    'FROM "CampaignSource" WHERE "id" = %s',
+                    (
+                        campaign_id,
+                        raw.source_url,
+                        *fields,
+                        starts_at,
+                        ends_at,
+                        seen_at,
+                        seen_at,
+                        seen_at,
+                        source_id,
+                    ),
+                )
+            else:
+                await self._conn.execute(
+                    'UPDATE "Campaign" SET "title" = %s, "rawText" = %s, "rawHash" = %s, '
+                    '"summary" = %s, "joinMethod" = %s::"JoinMethod", "joinDeadline" = %s, '
+                    '"confidence" = %s, "uncertainFields" = %s, '
+                    '"startsAt" = COALESCE(%s, "startsAt"), "endsAt" = COALESCE(%s, "endsAt"), '
+                    '"status" = \'DRAFT\', "lastSeenAt" = %s, "updatedAt" = %s WHERE "id" = %s',
+                    (*fields, starts_at, ends_at, seen_at, seen_at, campaign_id),
+                )
+                await self._conn.execute(
+                    'DELETE FROM "CampaignRule" WHERE "campaignId" = %s', (campaign_id,)
+                )
+            for rule in result.rules:
+                await self._conn.execute(
+                    'INSERT INTO "CampaignRule" ("id", "campaignId", "categoryIds", '
+                    '"merchantIds", "thresholdType", "thresholdKurus", "txnCount", "tierRepeat", '
+                    '"rewardType", "rewardKurus", "rewardBps", "capKurus", "exclusions") '
+                    'VALUES (%s, %s, %s, %s, %s::"Threshold", %s, %s, %s, %s::"Reward", '
+                    "%s, %s, %s, %s)",
+                    (
+                        new_id(),
+                        campaign_id,
+                        rule.category_ids,
+                        rule.merchant_ids,
+                        rule.threshold_type,
+                        rule.threshold_kurus,
+                        rule.txn_count,
+                        rule.tier_repeat,
+                        rule.reward_type,
+                        rule.reward_kurus,
+                        rule.reward_bps,
+                        rule.cap_kurus,
+                        rule.exclusions,
+                    ),
+                )
+        return campaign_id
