@@ -168,6 +168,9 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   `save_extraction` ile kurallarla tek işlemde DRAFT yazar. Değişen kampanyanın yeni metni/özeti
   yalnızca ayıklama başarılıysa yazılır (başarısızsa ertesi gün yeniden denenir; ADR 0011).
   Testlerde LLM: `tests/ornek.py → ScriptedLlm`. Günlük iş: `python -m engine.pipeline [adaptör ...]`.
+- Doğruluk ölçümü (ADR 0013, `services/engine/eval/README.md`): `pnpm engine:eval export|run|score`.
+  Set `eval/cases/*.json` (slug/ad ile etiket, `labeled_by: admin|elle`). Vaka uydurulmaz;
+  sentetik vakalar yalnızca testlerde (`synthetic: true`, rapora girmez). `run` ücretli API çağırır.
 - DB erişimi yalnızca `pipeline/store.py` (`CampaignStore`, `connect`). `id` ve `updatedAt` Prisma'da
   uygulama tarafında üretilir; Python bunları açıkça yazar. Zaman damgaları UTC, saat dilimsiz.
 - DB testleri `DATABASE_URL` yoksa atlanır; CI'da `ENGINE_DB_TESTS=required` atlanmayı yasaklar

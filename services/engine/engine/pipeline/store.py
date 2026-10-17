@@ -73,6 +73,32 @@ class CampaignStore:
         merchants = {row["name"]: row["id"] for row in await cursor.fetchall()}
         return Catalog(categories=categories, merchants=merchants)
 
+    async def labeled_campaigns(self, status: str, limit: int) -> list[dict[str, Any]]:
+        """Değerlendirme seti için: durumdaki kampanyalar + kuralları + program slug'ı.
+
+        En son güncellenenler önce (onay kuyruğunda yeni düzeltilmiş olanlar).
+        """
+        cursor = await self._conn.execute(
+            'SELECT c."id", c."sourceUrl", c."title", c."rawText", c."startsAt", c."endsAt", '
+            'c."joinMethod"::text AS "joinMethod", c."joinDeadline", p."slug" AS "programSlug" '
+            'FROM "Campaign" c JOIN "Program" p ON p."id" = c."programId" '
+            'WHERE c."status" = %s::"CampaignStatus" ORDER BY c."updatedAt" DESC LIMIT %s',
+            (status, limit),
+        )
+        campaigns = await cursor.fetchall()
+        cursor = await self._conn.execute(
+            'SELECT "campaignId", "categoryIds", "merchantIds", '
+            '"thresholdType"::text AS "thresholdType", "thresholdKurus", "txnCount", '
+            '"tierRepeat", "rewardType"::text AS "rewardType", "rewardKurus", "rewardBps", '
+            '"capKurus", "exclusions" FROM "CampaignRule" WHERE "campaignId" = ANY(%s) '
+            'ORDER BY "id"',
+            ([row["id"] for row in campaigns],),
+        )
+        rules: dict[str, list[dict[str, Any]]] = {}
+        for rule in await cursor.fetchall():
+            rules.setdefault(rule["campaignId"], []).append(rule)
+        return [row | {"rules": rules.get(row["id"], [])} for row in campaigns]
+
     # ---------- Kaynak ve çalıştırma ----------
 
     async def ensure_source(

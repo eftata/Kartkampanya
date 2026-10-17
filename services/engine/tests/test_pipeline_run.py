@@ -2,13 +2,16 @@
 
 import os
 from collections.abc import AsyncIterator
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
 import psycopg
 import pytest
 
+from engine.evaluation.dataset import load_cases
+from engine.evaluation.dataset import load_catalog as load_eval_catalog
+from engine.evaluation.evaluate import export_cases
 from engine.pipeline.changes import Change
 from engine.pipeline.run import run_source
 from engine.pipeline.store import CampaignStore, connect, new_id
@@ -299,3 +302,34 @@ async def test_load_catalog(db: tuple[Conn, type[OrnekAdapter]]) -> None:
     finally:
         await conn.execute('DELETE FROM "Merchant" WHERE "id" = %s', (merchant_id,))
         await conn.execute('DELETE FROM "Category" WHERE "id" = %s', (category_id,))
+
+
+async def test_export_writes_approved_campaigns_as_labeled_cases(
+    db: tuple[Conn, type[OrnekAdapter]], tmp_path: Path
+) -> None:
+    conn, adapter_cls = db
+    store = CampaignStore(conn)
+    report = await run_source(
+        adapter_cls(), FixtureFetcher(pages(adapter_cls)), store, ScriptedLlm()
+    )
+    approved = report.pending[0].raw.source_url
+    await conn.execute(
+        'UPDATE "Campaign" SET "status" = \'APPROVED\', "updatedAt" = now() + interval \'1 day\' '
+        'WHERE "sourceUrl" = %s',
+        (approved,),
+    )
+
+    result = await export_cases(store, tmp_path, status="APPROVED", limit=1)
+    assert len(result.written) == 1 and result.invalid == []
+    cases = load_cases(tmp_path, load_eval_catalog(tmp_path))
+    assert [c.source_url for c in cases] == [approved]
+    case = cases[0]
+    assert case.id.startswith(f"{adapter_cls.program}-markette-")
+    assert case.labeled_by == "admin" and not case.synthetic
+    assert case.starts_at == date(2026, 11, 1) and case.ends_at == date(2026, 11, 30)
+    assert case.expected.join_method == "APP"
+    assert [r.model_dump() for r in case.expected.rules] == ORNEK_EXTRACTION["rules"]
+
+    # Elle düzeltilmiş olabilecek dosya ikinci dışa aktarımda ezilmez.
+    again = await export_cases(store, tmp_path, status="APPROVED", limit=1)
+    assert again.written == [] and again.skipped == [case.id]
