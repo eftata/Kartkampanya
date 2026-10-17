@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     pipeline_user_agent: str = "KartPlanBot/0.1"
     pipeline_min_delay_seconds: float = Field(default=2.0, ge=2.0)
 
+    # LLM ayıklama (ADR 0010). Anahtar yoksa ayıklama çalışmaz; tarama ve değişiklik tespiti
+    # yine de çalışır.
+    anthropic_api_key: SecretStr = Field(default=SecretStr(""))
+    llm_model: str = "claude-opus-5-5"
+
     # Veri hattının yazdığı veritabanı (web ile aynı). Prisma biçimindeki "?schema=" parametresi
     # psycopg'ye uygun hale `postgres_dsn` ile çevrilir.
     database_url: SecretStr = Field(default=SecretStr(""))

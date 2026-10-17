@@ -18,6 +18,7 @@ from psycopg.types.json import Jsonb
 
 from engine.pipeline.adapters.base import RawCampaign
 from engine.pipeline.changes import StoredCampaign
+from engine.pipeline.extract import Catalog
 from engine.settings import Settings
 
 RunStatus = Literal["SUCCEEDED", "FAILED"]
@@ -61,6 +62,16 @@ class CampaignStore:
     ) -> dict[str, Any] | None:
         cursor = await self._conn.execute(query, params)
         return await cursor.fetchone()
+
+    # ---------- Katalog ----------
+
+    async def load_catalog(self) -> Catalog:
+        """LLM isteminde verilen seçenekler: tüm kategori slug'ları ve marka adları."""
+        cursor = await self._conn.execute('SELECT "id", "slug" FROM "Category"')
+        categories = {row["slug"]: row["id"] for row in await cursor.fetchall()}
+        cursor = await self._conn.execute('SELECT "id", "name" FROM "Merchant"')
+        merchants = {row["name"]: row["id"] for row in await cursor.fetchall()}
+        return Catalog(categories=categories, merchants=merchants)
 
     # ---------- Kaynak ve çalıştırma ----------
 

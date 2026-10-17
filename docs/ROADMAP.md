@@ -112,7 +112,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 - [x] Şema: `Campaign`, `CampaignRule`, `CampaignSource`, `PipelineRun` — kart kapsamı `CampaignCard` ara tablosu; ADR 0007
 - [ ] Adaptör arayüzü + ilk 2 adaptör (örn. World ve Bonus): liste sayfası → detay sayfası → ham metin — **arayüz tamam** (`BankAdapter`, `PoliteFetcher`, tarih/metin yardımcıları; ADR 0008). World ve Bonus adaptörleri bekliyor: geliştirme ortamının ağ politikası banka sitelerini engelliyor, seçiciler gerçek HTML görülmeden yazılmaz.
 - [x] Değişiklik tespiti: metin hash'i aynıysa yeniden ayıklama yapma — `content_hash` (başlık + tarih + boşluk farkları yok sayılan metin), `run_source` (yeni/değişmedi/değişti; değişen yayındaki kampanya DRAFT'a çekilir), `CampaignStore` (psycopg); ADR 0009
-- [ ] LLM ayıklama: ham metin → `CampaignRule[]` JSON + güven skoru (şema doğrulamalı)
+- [x] LLM ayıklama: ham metin → `CampaignRule[]` JSON + güven skoru (şema doğrulamalı) — `extract.py`: Claude API yapılandırılmış çıktı (kategori/marka katalogdan `enum`), pydantic doğrulaması, geçersizse hatalarla bir kez yeniden deneme, ret için sunucu tarafı yedek model; `CampaignStore.load_catalog`; ADR 0010. Kayıt adımı (`Campaign` + `CampaignRule` yazımı) bekliyor
 - [ ] 30 elle etiketlenmiş kampanyalık test seti; ayıklama doğruluğu raporu
 - [ ] Admin onay kuyruğu: ham metin ile ayıklanan kurallar yan yana, düzenle → onayla / reddet
 

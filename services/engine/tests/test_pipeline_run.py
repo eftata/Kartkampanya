@@ -199,3 +199,23 @@ async def test_inactive_source_is_skipped_without_a_run_record(
     )
     report = await run_source(adapter_cls(), FixtureFetcher(pages(adapter_cls)), store)
     assert report.status == "SKIPPED" and report.run_id is None
+
+
+async def test_load_catalog(db: tuple[Conn, type[OrnekAdapter]]) -> None:
+    conn, _ = db
+    category_id, merchant_id, slug = new_id(), new_id(), f"kat-{new_id()[:8]}"
+    await conn.execute(
+        'INSERT INTO "Category" ("id", "slug", "name") VALUES (%s, %s, %s)',
+        (category_id, slug, "Test"),
+    )
+    await conn.execute(
+        'INSERT INTO "Merchant" ("id", "name", "categoryId") VALUES (%s, %s, %s)',
+        (merchant_id, f"Marka {slug}", category_id),
+    )
+    try:
+        catalog = await CampaignStore(conn).load_catalog()
+        assert catalog.categories[slug] == category_id
+        assert catalog.merchants[f"Marka {slug}"] == merchant_id
+    finally:
+        await conn.execute('DELETE FROM "Merchant" WHERE "id" = %s', (merchant_id,))
+        await conn.execute('DELETE FROM "Category" WHERE "id" = %s', (category_id,))

@@ -92,6 +92,9 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   Para yine kuruş cinsinden `int`; float ile para hesabı yok.
 - Docker: `docker build -t kartplan-engine services/engine` (çok aşamalı, root olmayan kullanıcı,
   `PORT` değişkenini dinler).
+- LLM ayıklama `engine/pipeline/extract.py` (ADR 0010): Claude API (`ANTHROPIC_API_KEY`,
+  `LLM_MODEL`), yapılandırılmış çıktı + pydantic doğrulaması, geçersizse bir kez yeniden deneme,
+  `fallbacks: "default"`. Testler `LlmClient` sahtesiyle; testlerde gerçek API çağrısı yapılmaz.
 
 ## CI ve deploy — ayrıntı: docs/deploy.md
 
