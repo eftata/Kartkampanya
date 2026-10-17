@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
-import { monthLabel, PlanView } from "@/components/plan-view";
+import { PlanView } from "@/components/plan-view";
 import { RecomputePlanButton } from "@/components/recompute-plan-button";
 import { requireUser } from "@/lib/auth/session";
 import { getMonthlyPlan } from "@/lib/plan";
+import { monthLabel } from "@/lib/plan-request";
 import { hasSpendProfile } from "@/lib/spend-profile";
 import { countUserCards } from "@/lib/user-cards";
 

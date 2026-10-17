@@ -2,6 +2,7 @@ export * from "./admin-catalog";
 export * from "./campaigns";
 export * from "./cards";
 export * from "./money";
+export * from "./notifications";
 export * from "./plan";
 export * from "./rates";
 export * from "./spend";

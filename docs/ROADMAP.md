@@ -142,8 +142,8 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 
 ### Sprint 5 — Bildirim, KVKK, vitrin
 
-- [ ] E-posta: katılım hatırlatma (kampanya başlangıcında), son 3 gün uyarısı, haftalık plan özeti
-- [ ] Bildirim tercihleri ve tek tıkla abonelikten çıkma
+- [x] E-posta: katılım hatırlatma (kampanya başlangıcında), son 3 gün uyarısı, haftalık plan özeti — günlük iş `GET /api/cron/notifications` (Vercel Cron, `CRON_SECRET`), `NotificationLog` ile tek sefer, kullanıcı başına tür başına toplu e-posta; ADR 0018
+- [ ] Bildirim tercihleri ve tek tıkla abonelikten çıkma — **tek tıkla çıkma tamam** (imzalı bağlantı, `/abonelik` onay sayfası, `List-Unsubscribe-Post`); tercih ekranı ve `GET/PUT /api/me/notifications` bekliyor
 - [ ] KVKK: aydınlatma metni, açık rıza kaydı (versiyonlu), veri indirme, hesap silme
 - [ ] Landing page + herkese açık kampanya sayfaları (SEO), sitemap
 - [ ] Rate limiting, güvenlik başlıkları, hata takibi (Sentry), ürün analitiği (PostHog)

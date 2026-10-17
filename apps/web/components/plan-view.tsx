@@ -4,12 +4,6 @@ import Link from "next/link";
 import { JoinToggle } from "@/components/join-toggle";
 import type { PlanCampaignRef, PlanView as PlanViewData } from "@/lib/plan";
 
-const monthFormat = new Intl.DateTimeFormat("tr-TR", {
-  month: "long",
-  year: "numeric",
-  timeZone: "UTC",
-});
-
 function Tile({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div role="group" aria-label={label} className="rounded-xl border p-4">
@@ -43,10 +37,6 @@ function uniqueCampaigns(ruleIds: string[], lookup: Record<string, PlanCampaignR
     if (ref) seen.set(ref.id, ref);
   }
   return [...seen.values()];
-}
-
-export function monthLabel(month: string) {
-  return monthFormat.format(new Date(`${month}-01T00:00:00Z`));
 }
 
 export function PlanView({ view }: { view: PlanViewData }) {

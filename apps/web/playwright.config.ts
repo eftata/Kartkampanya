@@ -3,6 +3,8 @@ import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 import { config } from "dotenv";
 
+import { E2E_CRON_SECRET } from "./e2e/env";
+
 // Test süreci (ör. e2e/helpers.ts → makeAdmin) veritabanına kök .env ile bağlanır; CI'da ortamdan gelir.
 config({ path: path.resolve(import.meta.dirname, "../../.env"), quiet: true });
 
@@ -50,6 +52,8 @@ export default defineConfig({
         NEXT_TELEMETRY_DISABLED: "1",
         ENGINE_URL: engineURL,
         ENGINE_TOKEN: engineToken,
+        CRON_SECRET: E2E_CRON_SECRET,
+        APP_URL: baseURL,
       },
     },
   ],

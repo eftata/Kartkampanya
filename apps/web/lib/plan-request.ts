@@ -69,6 +69,17 @@ export function monthBounds(month: string): { first: string; last: string; days:
   return { first: `${month}-01`, last: `${month}-${String(days).padStart(2, "0")}`, days };
 }
 
+const monthFormat = new Intl.DateTimeFormat("tr-TR", {
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+/** "2026-11" → "Kasım 2026". */
+export function monthLabel(month: string): string {
+  return monthFormat.format(new Date(`${month}-01T00:00:00Z`));
+}
+
 const DEFAULT_MAX_CARDS = 3;
 
 export function buildPlanRequest(source: PlanSource): PlanRequestInput {

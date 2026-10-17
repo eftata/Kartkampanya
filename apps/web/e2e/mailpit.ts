@@ -28,3 +28,38 @@ export async function getMagicLink(email: string): Promise<string> {
   if (!link) throw new Error("E-postada giriş bağlantısı bulunamadı");
   return link;
 }
+
+type MailpitHeaders = Record<string, string[]>;
+
+/** Adrese gelen ve konusu `subject` içeren son e-posta (gelene kadar bekler). */
+export async function waitForMail(
+  email: string,
+  subject: string,
+): Promise<{ id: string; text: string; headers: MailpitHeaders }> {
+  let id: string | undefined;
+  await expect
+    .poll(
+      async () => {
+        const query = encodeURIComponent(`to:"${email}" subject:"${subject}"`);
+        const res = await fetch(`${MAILPIT_URL}/api/v1/search?query=${query}`);
+        id = ((await res.json()) as MailpitSearch).messages[0]?.ID;
+        return id;
+      },
+      { message: `${email} adresine "${subject}" gelmedi`, timeout: 15_000 },
+    )
+    .toBeTruthy();
+  const message = (await (
+    await fetch(`${MAILPIT_URL}/api/v1/message/${id}`)
+  ).json()) as MailpitMessage;
+  const headers = (await (
+    await fetch(`${MAILPIT_URL}/api/v1/message/${id}/headers`)
+  ).json()) as MailpitHeaders;
+  return { id: id!, text: message.Text, headers };
+}
+
+/** Adrese gelen ve konusu `subject` içeren e-posta sayısı. */
+export async function countMails(email: string, subject: string): Promise<number> {
+  const query = encodeURIComponent(`to:"${email}" subject:"${subject}"`);
+  const res = await fetch(`${MAILPIT_URL}/api/v1/search?query=${query}`);
+  return ((await res.json()) as MailpitSearch).messages.length;
+}

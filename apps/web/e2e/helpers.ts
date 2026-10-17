@@ -114,3 +114,12 @@ export async function deleteCampaigns(ids: string[]): Promise<void> {
     await prisma.$disconnect();
   }
 }
+
+export async function userIdByEmail(email: string): Promise<string> {
+  const prisma = createPrismaClient();
+  try {
+    return (await prisma.user.findUniqueOrThrow({ where: { email } })).id;
+  } finally {
+    await prisma.$disconnect();
+  }
+}

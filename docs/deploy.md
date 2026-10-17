@@ -125,11 +125,19 @@ e-postalar spama düşer. Gerekenler: host, port (465 → TLS), kullanıcı, şi
    | `ENGINE_TOKEN`                                | Railway'dekiyle aynı             |
    | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`       | (opsiyonel) Google OAuth         |
    | `SEED_ADMIN_EMAIL`                            | (opsiyonel) kendi e-postan       |
+   | `CRON_SECRET`                                 | `openssl rand -hex 32`           |
+   | `APP_URL`                                     | `https://<staging-alan-adı>`     |
 
    `AUTH_URL` gerekmez: Auth.js Vercel'de adresi istekten alır (`trustHost`).
    Google değişkenlerini sonradan eklersen **yeniden deploy et**: buton build anında belirlenir.
 
 4. Deploy et → `https://<proje>.vercel.app/api/health` → `{"status":"ok"}`.
+5. **Bildirim işi:** `apps/web/vercel.json` günlük cron'u tanımlar (`/api/cron/notifications`,
+   06:00 UTC). Vercel, `CRON_SECRET` tanımlıysa isteğe `Authorization: Bearer` ekler. Elle deneme:
+
+   ```bash
+   curl -H "Authorization: Bearer $CRON_SECRET" "https://<staging>/api/cron/notifications?user=<kullanıcı-id>"
+   ```
 
 > **Preview deploy'ları ve veritabanı:** Staging'de preview'lar da aynı veritabanını kullanır ve
 > build sırasında migration uygular. Yıkıcı bir migration'ı önce yerelde dene. Production'da

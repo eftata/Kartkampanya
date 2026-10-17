@@ -29,6 +29,7 @@ model User {
   adminAuditLogs AdminAuditLog[]
   campaignStatus UserCampaignStatus[]
   plans          MonthlyPlan[]
+  notifications  NotificationLog[]
 }
 
 enum Role {
@@ -377,4 +378,23 @@ model MonthlyPlan {
   createdAt     DateTime @default(now())
 
   @@unique([userId, month])
+}
+
+// Gönderilen bildirimler (Sprint 5, ADR 0018): aynı bildirim iki kez gitmesin diye. `key` kampanya
+// id'si (hatırlatma, son günler) ya da ISO hafta ("2026-W47", haftalık özet).
+model NotificationLog {
+  id     String           @id @default(cuid())
+  userId String
+  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind   NotificationKind
+  key    String
+  sentAt DateTime         @default(now())
+
+  @@unique([userId, kind, key])
+}
+
+enum NotificationKind {
+  JOIN_REMINDER
+  ENDING_SOON
+  WEEKLY_SUMMARY
 }

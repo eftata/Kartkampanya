@@ -174,6 +174,16 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   (kurallar veri hattının pydantic modeliyle aynı tutulmalı). İşlem kaydı yardımcıları
   `lib/admin-audit.ts`. e2e'de taslak kampanya: `e2e/helpers.ts → createDraftCampaign`.
 
+## Bildirimler (`apps/web/lib/notifications`) — ayrıntı: docs/adr/0018-notifications.md
+
+- Günlük iş `GET /api/cron/notifications` (`CRON_SECRET`, Vercel Cron `vercel.json`); `?user=` tek
+  kullanıcı. Seçim saf `pick.ts`, şablonlar saf `templates.ts`, çalıştırıcı `run.ts` (`send` ve
+  `userIds` enjekte edilebilir: testler başka kullanıcılara dokunmasın diye `userIds` verir).
+- Tek sefer `NotificationLog` (kullanıcı + tür + anahtar). Tercihler `User.notifyPrefs`
+  (`parseNotificationPrefs`, varsayılan açık). Her e-postada imzalı çıkış bağlantısı
+  (`unsubscribe.ts`, AUTH_SECRET); `/abonelik` GET'te kapatmaz, onay ister; tek tık `POST /api/unsubscribe`.
+- e2e: Mailpit yardımcıları `e2e/mailpit.ts` (`waitForMail`, `countMails`), anahtar `e2e/env.ts`.
+
 ## Veri hattı (`services/engine/engine/pipeline`) — ayrıntı: docs/adr/0008-pipeline-adapters.md
 
 - Adaptör = `BankAdapter` alt sınıfı (`adapters/<ad>.py`, `@register`): yalnızca `parse_list` ve
