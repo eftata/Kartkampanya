@@ -80,7 +80,8 @@ Kampanya taraması motorla aynı imajı kullanan ayrı bir **cron** servisidir (
    | `PIPELINE_USER_AGENT` | `KartPlanBot/0.1 (+https://<alan-adı>; <iletişim e-postası>)` |
 
 5. Elle deneme: servis → **Run now**; loglarda her adaptör için
-   `bulunan · değişmeyen · ayıklanan · hata` satırı görünür, kayıtlar `PipelineRun` tablosunda.
+   `bulunan · değişmeyen · ayıklanan · hata` satırı, sonunda `Süresi dolan kampanya: N` görünür;
+   kayıtlar `PipelineRun` tablosunda. Adaptör yokken de iş süresi dolanları kapatır.
 
 ## 3. E-posta (SMTP)
 

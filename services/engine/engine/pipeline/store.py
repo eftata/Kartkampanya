@@ -164,6 +164,20 @@ class CampaignStore:
             'UPDATE "Campaign" SET "lastSeenAt" = %s WHERE "id" = %s', (seen_at, campaign_id)
         )
 
+    async def expire_campaigns(self, today: date) -> int:
+        """Bitiş günü geçmiş (endsAt < bugün) onaylı ve taslak kampanyaları EXPIRED yapar.
+
+        `endsAt` kampanyanın son günüdür (dahil). Reddedilenlere dokunulmaz. Kaç kampanyanın
+        kapandığını döner. Metni sonradan değişen kampanya veri hattında yeniden DRAFT olabilir;
+        ertesi gece yine kapanır.
+        """
+        cursor = await self._conn.execute(
+            'UPDATE "Campaign" SET "status" = \'EXPIRED\', "updatedAt" = %s '
+            "WHERE \"endsAt\" < %s AND \"status\" IN ('APPROVED', 'DRAFT')",
+            (utcnow(), _day(today)),
+        )
+        return cursor.rowcount
+
     async def mark_changed(self, campaign_id: str, seen_at: datetime) -> None:
         """Metni değişen kampanya hemen yayından kalkar (DRAFT).
 

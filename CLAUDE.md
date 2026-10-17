@@ -167,7 +167,8 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
 - `run_source(adapter, fetcher, store, llm)`: yeni/değişen kampanyaları ayıklar ve
   `save_extraction` ile kurallarla tek işlemde DRAFT yazar. Değişen kampanyanın yeni metni/özeti
   yalnızca ayıklama başarılıysa yazılır (başarısızsa ertesi gün yeniden denenir; ADR 0011).
-  Testlerde LLM: `tests/ornek.py → ScriptedLlm`. Günlük iş: `python -m engine.pipeline [adaptör ...]`.
+  Testlerde LLM: `tests/ornek.py → ScriptedLlm`. Günlük iş: `python -m engine.pipeline [adaptör ...]`
+  (taramadan sonra süresi dolanları `EXPIRED` yapar; `endsAt` son gün, Türkiye takvimi).
 - Doğruluk ölçümü (ADR 0013, `services/engine/eval/README.md`): `pnpm engine:eval export|run|score`.
   Set `eval/cases/*.json` (slug/ad ile etiket, `labeled_by: admin|elle`). Vaka uydurulmaz;
   sentetik vakalar yalnızca testlerde (`synthetic: true`, rapora girmez). `run` ücretli API çağırır.

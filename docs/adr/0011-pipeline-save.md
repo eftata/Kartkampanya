@@ -31,6 +31,10 @@ aynı görünecek, kampanya "değişmedi" sayılıp **hiç yeniden ayıklanmayac
 - **Günlük iş:** `python -m engine.pipeline [adaptör ...]` (ad verilmezse kayıtlı tümü;
   `adapters/` altındaki modüller otomatik içe aktarılır). Çıkış kodu 0 / 1 (bir kaynağın listesi
   alınamadı) / 2 (bilinmeyen adaptör). Zamanlama dağıtım ortamındadır (Railway cron, `docs/deploy.md`).
+- **Kapanış (Sprint 3):** tarama bittikten sonra `expire_campaigns` bitiş günü geçmiş onaylı ve
+  taslak kampanyaları `EXPIRED` yapar. `endsAt` son gündür (dahil); "bugün" Türkiye takvimidir
+  (UTC+3, yaz saati yok — imajda saat dilimi verisine gerek kalmaz). Reddedilenler değişmez.
+  Adaptör yokken de çalışır.
 
 ## Sonuçlar
 

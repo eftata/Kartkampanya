@@ -333,3 +333,43 @@ async def test_export_writes_approved_campaigns_as_labeled_cases(
     # Elle düzeltilmiş olabilecek dosya ikinci dışa aktarımda ezilmez.
     again = await export_cases(store, tmp_path, status="APPROVED", limit=1)
     assert again.written == [] and again.skipped == [case.id]
+
+
+async def test_expire_closes_approved_and_draft_campaigns_after_their_last_day(
+    db: tuple[Conn, type[OrnekAdapter]],
+) -> None:
+    conn, adapter_cls = db
+    store = CampaignStore(conn)
+    report = await run_source(
+        adapter_cls(), FixtureFetcher(pages(adapter_cls)), store, ScriptedLlm()
+    )
+    approved, draft = (item.raw.source_url for item in report.pending)
+    await conn.execute(
+        'UPDATE "Campaign" SET "status" = \'APPROVED\' WHERE "sourceUrl" = %s', (approved,)
+    )
+
+    async def statuses() -> dict[str, str]:
+        rows = await (
+            await conn.execute(
+                'SELECT "sourceUrl", "status"::text AS "status" FROM "Campaign" '
+                'WHERE "sourceUrl" IN (%s, %s)',
+                (approved, draft),
+            )
+        ).fetchall()
+        return {row["sourceUrl"]: row["status"] for row in rows}
+
+    # Bitiş günü (30 Kasım) kampanyanın son günüdür: o gün hâlâ açık.
+    await store.expire_campaigns(date(2026, 11, 30))
+    assert await statuses() == {approved: "APPROVED", draft: "DRAFT"}
+
+    await conn.execute(
+        'UPDATE "Campaign" SET "status" = \'REJECTED\' WHERE "sourceUrl" = %s', (draft,)
+    )
+    assert await store.expire_campaigns(date(2026, 12, 1)) >= 1
+    assert await statuses() == {approved: "EXPIRED", draft: "REJECTED"}
+
+    await conn.execute(
+        'UPDATE "Campaign" SET "status" = \'DRAFT\' WHERE "sourceUrl" = %s', (draft,)
+    )
+    await store.expire_campaigns(date(2026, 12, 1))
+    assert (await statuses())[draft] == "EXPIRED"
