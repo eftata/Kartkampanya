@@ -100,6 +100,9 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   `solve.py` (`optimize`), API `POST /optimize`. Sözleşme tek kaynak zod (`packages/shared/src/plan.ts`):
   değişince `pnpm plan:gen` (JSON Schema + `contract/*.py` üretir; elle düzenleme). Senkron testleri
   iki tarafta. 10 kabul senaryosu `tests/test_optimizer.py`.
+- Plan sayfası (ADR 0016): `apps/web/lib/plan-request.ts` (saf: kullanıcı verisi → PlanRequest),
+  `lib/plan.ts → getMonthlyPlan`, `lib/engine.ts` (`ENGINE_URL`/`ENGINE_TOKEN`, `connection()`).
+  e2e motoru Playwright ikinci sunucu olarak başlatır (port 8100, `uv` gerekir).
 - LLM ayıklama `engine/pipeline/extract.py` (ADR 0010): Claude API (`ANTHROPIC_API_KEY`,
   `LLM_MODEL`), yapılandırılmış çıktı + pydantic doğrulaması, geçersizse bir kez yeniden deneme,
   `fallbacks: "default"`. Testler `LlmClient` sahtesiyle; testlerde gerçek API çağrısı yapılmaz.

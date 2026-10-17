@@ -44,6 +44,7 @@ class Campaign:
     reward: int  # kuruş, kademe başına
     reward_bps: int | None
     cap: int | None
+    group: str | None = None  # aynı gruptan yalnızca en yüksek ödül sayılır
 
     def pairs(self, cards: Sequence[str]) -> list[tuple[str, str]]:
         return [(c, k) for c in sorted(self.categories) for k in cards if k in self.cards]
@@ -85,6 +86,7 @@ class Problem:
                     reward=raw.reward,
                     reward_bps=raw.rewardBps,
                     cap=raw.cap,
+                    group=raw.group,
                 )
             )
         options = request.options
@@ -172,6 +174,12 @@ def evaluate(problem: Problem, allocation: Mapping[tuple[str, str], int]) -> Eva
         spend, best = sum(amounts), max(amounts, default=0)
         count, reward = campaign_reward(campaign, spend, best)
         results[campaign.id] = CampaignResult(campaign.id, count, reward, spend, best)
+    # Gruplar: yalnızca en yüksek ödüllü kural sayılır; diğerlerinin ödülü sıfırlanır.
+    for members in groups(problem).values():
+        winner = max(members, key=lambda cid: (results[cid].reward, -members.index(cid)))
+        for cid in members:
+            if cid != winner:
+                results[cid].reward = 0
     placed: dict[str, int] = {}
     for (c, _), amount in alloc.items():
         placed[c] = placed.get(c, 0) + amount
@@ -183,11 +191,21 @@ def evaluate(problem: Problem, allocation: Mapping[tuple[str, str], int]) -> Eva
     return Evaluation(alloc, base, results, unallocated)
 
 
+def groups(problem: Problem) -> dict[str, list[str]]:
+    """Grup → kural kimlikleri (istekteki sırayla)."""
+    result: dict[str, list[str]] = {}
+    for campaign in problem.campaigns:
+        if campaign.group is not None:
+            result.setdefault(campaign.group, []).append(campaign.id)
+    return result
+
+
 def near_misses(
     problem: Problem, evaluation: Evaluation, limit: int = 10
 ) -> list[tuple[str, int, int]]:
     """(kampanya, eksik tutar, ek ödül): sonraki kademeye ne kadar kaldı. Teşvik değil, bilgi."""
     misses = []
+    group_of = groups(problem)
     for campaign in problem.campaigns:
         result = evaluation.campaigns[campaign.id]
         if campaign.threshold_type == "TXN_COUNT" or campaign.threshold == 0:
@@ -205,7 +223,13 @@ def near_misses(
         # Tek seferlik eşikte eksik tutar tek bir alışveriştir; en büyük harcama eşik olur.
         best = campaign.threshold if campaign.threshold_type == "SINGLE" else result.best_pair
         _, after = campaign_reward(campaign, result.spend + missing, best)
-        extra = after - result.reward
+        # Grupta başka kademe ödül veriyorsa ek kazanç ona göre (kademeler toplanmaz).
+        current = (
+            max(evaluation.campaigns[cid].reward for cid in group_of[campaign.group])
+            if campaign.group is not None
+            else result.reward
+        )
+        extra = after - current
         if missing > 0 and extra > 0:
             misses.append((campaign.id, missing, extra))
     return sorted(misses, key=lambda miss: (miss[1], -miss[2], miss[0]))[:limit]

@@ -358,3 +358,23 @@ def test_split_keeps_total() -> None:
     assert split(100, [1, 1, 1]) == [34, 33, 33]
     assert split(25_000, [600_000]) == [25_000]
     assert split(7, [0, 0]) == [0, 0]
+
+
+def test_rules_in_the_same_group_are_alternative_tiers() -> None:
+    tiers = [
+        campaign("K-1", ["A"], ["market"], threshold=1000 * TL, reward=50 * TL, group="K"),
+        campaign("K-2", ["A"], ["market"], threshold=2000 * TL, reward=120 * TL, group="K"),
+    ]
+    full = optimize(request({"market": 3000}, [card("A")], tiers))
+    assert hits(full) == {"K-2": 120 * TL}  # 50 + 120 değil
+    assert full.totalExpected == (15 + 120) * TL
+
+    partial = optimize(request({"market": 1500}, [card("A")], tiers))
+    assert hits(partial) == {"K-1": 50 * TL}
+    assert [(m.id, m.missingAmount, m.extraReward) for m in partial.nearMisses] == [
+        ("K-2", 500 * TL, 70 * TL)
+    ]
+
+    problem = Problem.from_request(request({"market": 3000}, [card("A")], tiers))
+    greedy = evaluate(problem, solve_greedy(problem, deadline=time.monotonic() + 1))
+    assert greedy.total == full.totalExpected

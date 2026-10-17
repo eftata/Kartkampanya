@@ -100,6 +100,14 @@ jobs:
           pnpm db:seed
       - name: Generate a throwaway AUTH_SECRET
         run: echo "AUTH_SECRET=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+      # Plan sayfası optimizasyon motorunu çağırır; Playwright motoru ayrı sunucu olarak başlatır.
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          working-directory: services/engine
+          enable-cache: true
+          cache-dependency-glob: services/engine/uv.lock
+      - run: uv sync --locked --no-dev
+        working-directory: services/engine
       - name: Install Playwright browser
         run: pnpm --filter @kartplan/web exec playwright install --with-deps chromium
       - run: pnpm test:e2e

@@ -47,6 +47,7 @@ class PlanCampaign(BaseModel):
     rewardBps: Annotated[int | None, Field(ge=0, le=10000)] = None
     cap: Annotated[int | None, Field(ge=0, le=10000000000)]
     eligible: bool
+    group: Annotated[str | None, Field(max_length=100, min_length=1)] = None
 
 
 class PlanOptions(BaseModel):

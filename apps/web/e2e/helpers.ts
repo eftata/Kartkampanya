@@ -39,11 +39,18 @@ export async function createDraftCampaign(
     categorySlug?: string;
     rewardType?: "POINTS" | "CASHBACK";
     rewardKurus?: number;
+    programSlug?: string;
+    /** "YYYY-AA-GG"; varsayılan 2099 Ocak (henüz başlamamış). */
+    startsAt?: string;
+    endsAt?: string;
+    thresholdKurus?: number;
   } = {},
 ): Promise<string> {
   const prisma = createPrismaClient();
   try {
-    const program = await prisma.program.findUniqueOrThrow({ where: { slug: "bonus" } });
+    const program = await prisma.program.findUniqueOrThrow({
+      where: { slug: options.programSlug ?? "bonus" },
+    });
     const category = options.categorySlug
       ? await prisma.category.findUniqueOrThrow({ where: { slug: options.categorySlug } })
       : null;
@@ -57,8 +64,8 @@ export async function createDraftCampaign(
           "Taksitli işlemler hariçtir.",
         rawHash: "e2e",
         summary: ["Markette toplam 2.500 TL harcamaya 100 TL puan"],
-        startsAt: new Date("2099-01-01T00:00:00Z"),
-        endsAt: new Date("2099-01-31T00:00:00Z"),
+        startsAt: new Date(`${options.startsAt ?? "2099-01-01"}T00:00:00Z`),
+        endsAt: new Date(`${options.endsAt ?? "2099-01-31"}T00:00:00Z`),
         joinMethod: "APP",
         status: options.status ?? "DRAFT",
         confidence: 0.62,
@@ -69,7 +76,7 @@ export async function createDraftCampaign(
               categoryIds: category ? [category.id] : [],
               merchantIds: [],
               thresholdType: "CUMULATIVE",
-              thresholdKurus: 250_000,
+              thresholdKurus: options.thresholdKurus ?? 250_000,
               tierRepeat: true,
               rewardType: options.rewardType ?? "POINTS",
               rewardKurus: options.rewardKurus ?? 10_000,
@@ -84,6 +91,19 @@ export async function createDraftCampaign(
   } finally {
     await prisma.$disconnect();
   }
+}
+
+/** Bu ayın ilk ve son günü (Türkiye takvimi, UTC+3). */
+export function currentMonth(): { first: string; last: string } {
+  const today = new Date(Date.now() + 3 * 3_600_000);
+  const year = today.getUTCFullYear();
+  const month = today.getUTCMonth();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  return {
+    first: `${year}-${pad(month + 1)}-01`,
+    last: `${year}-${pad(month + 1)}-${pad(lastDay)}`,
+  };
 }
 
 export async function deleteCampaigns(ids: string[]): Promise<void> {

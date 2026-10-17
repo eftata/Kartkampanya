@@ -52,6 +52,11 @@ export const PlanCampaign = z
     cap: Amount.nullable(),
     /** false: katılım süresi geçmiş ve kullanıcı katılmamış — motor yok sayar. */
     eligible: z.boolean(),
+    /**
+     * Aynı gruptaki kurallardan yalnızca en yüksek ödüllüsü sayılır (bir kampanyanın alternatif
+     * kademeleri: "1.000 TL'ye 50 TL, 2.000 TL'ye 120 TL"). null = bağımsız kural.
+     */
+    group: Id.nullable().default(null),
   })
   .strict()
   .meta({ id: "PlanCampaign" });

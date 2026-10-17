@@ -135,7 +135,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 - [x] CP-SAT modeli: bütçe dağılımı, kart limiti, kademeli eşik, üst limit, katılım durumu — `engine/optimizer/cpsat.py` (+ `maxCards`, tek seferlik / işlem adedi eşiği, oransal ödül); `POST /optimize`
 - [x] TL tamsayı ölçeğinde çözüm (CP-SAT tamsayı ister), 2 sn zaman aşımı + açgözlü yedek algoritma — gösterilen sayılar kuruş cinsinden kesin yeniden hesap (`problem.py`); yedek `greedy.py`
 - [x] Birim testleri: ürün dokümanındaki örnek (beklenen 665 TL) dahil 10 senaryo — `tests/test_optimizer.py`. Not: ürün dokümanının K2/K3 kampanyaları elde yok; ROADMAP'teki sonuçlarla tutarlı yeniden kurgu kullanıldı, asıl değerler gelince güncellenecek
-- [ ] "Bu ayın planı" sayfası: kategori başına kart + tutar + kampanya, toplam beklenen kazanç, "her şeyi tek kartla ödeseydin" kıyası
+- [x] "Bu ayın planı" sayfası: kategori başına kart + tutar + kampanya, toplam beklenen kazanç, "her şeyi tek kartla ödeseydin" kıyası — `/plan`; ayrıca katılım hatırlatması ("Katıldım"), limit uyarısı, "Az kaldı". Plan isteği `lib/plan-request.ts` (çok kurallı kampanya → `group`, ay penceresine göre eşik ölçekleme); ADR 0016
 - [ ] Plan `MonthlyPlan` olarak saklanır; profil veya kampanya değişince yeniden hesaplanır
 
 **Kabul:** 10 test senaryosu geçiyor; gerçek kullanıcı verisiyle plan 1 saniyenin altında geliyor.
@@ -561,8 +561,9 @@ Motor durumsuzdur: web, kullanıcının kartlarını, bütçesini ve uygun kampa
 
 `eligible: false` → katılım süresi geçmiş ve kullanıcı katılmamış; motor bu kampanyayı yok sayar.
 
-Uygulanan sözleşmeye eklenenler (ADR 0015): kampanyada isteğe bağlı `txnCount` (işlem adedi eşiği)
-ve `rewardBps` (oransal ödül); `options` isteğe bağlı. Yanıtta `unallocated` (kart limitleri
+Uygulanan sözleşmeye eklenenler (ADR 0015): kampanyada isteğe bağlı `txnCount` (işlem adedi eşiği),
+`rewardBps` (oransal ödül) ve `group` (aynı gruptan yalnızca en yüksek ödül sayılır: bir kampanyanın
+alternatif kademeleri); `options` isteğe bağlı. Yanıtta `unallocated` (kart limitleri
 yetmeyen harcama) ve `baseline.card`; `status` `OPTIMAL | FEASIBLE | FALLBACK`.
 
 ### Çıktı (`PlanResponse`)

@@ -50,6 +50,7 @@ def solve_cpsat(problem: Problem, time_limit_s: float, workers: int = 8) -> CpSa
     model.add(sum(x.values()) >= min(total, sum(limits[: problem.max_cards])))
 
     objective = [x[c, k] * problem.cards[k].rate(c) for c in cats for k in cards]
+    grouped: dict[str, list[cp_model.IntVar]] = {}
     for campaign in problem.campaigns:
         pairs = campaign.pairs(cards)
         scope_max = sum(budget[c] for c in campaign.categories)
@@ -98,7 +99,14 @@ def solve_cpsat(problem: Problem, time_limit_s: float, workers: int = 8) -> CpSa
             model.add(percent == 0).only_enforce_if(~hit)
             bonus = percent
         model.add(reward <= 100 * fixed + bonus)
+        if campaign.group is not None:
+            # Grupta yalnızca bir kural ödül verebilir (kademeler toplanmaz).
+            active = model.new_bool_var(f"active[{campaign.id}]")
+            model.add(reward == 0).only_enforce_if(~active)
+            grouped.setdefault(campaign.group, []).append(active)
         objective.append(reward)
+    for members in grouped.values():
+        model.add(sum(members) <= 1)
     # Eşit kazançlı çözümler arasında kategori-kart çifti az olanı seç (gereksiz bölme yok).
     # Ana hedef çift sayısından büyük bir katsayıyla çarpılır; tek birimlik fark bile baskın kalır.
     opened = {pair: model.new_bool_var(f"open[{pair[0]}|{pair[1]}]") for pair in x}
