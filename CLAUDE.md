@@ -95,6 +95,11 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   Para yine kuruş cinsinden `int`; float ile para hesabı yok.
 - Docker: `docker build -t kartplan-engine services/engine` (çok aşamalı, root olmayan kullanıcı,
   `PORT` değişkenini dinler).
+- Optimizasyon (ADR 0015): `engine/optimizer/` — `problem.py` (normalize + kuruş cinsinden kesin
+  değerlendirme; gösterilen her sayı buradan), `cpsat.py` (TL tamsayı model), `greedy.py` (yedek),
+  `solve.py` (`optimize`), API `POST /optimize`. Sözleşme tek kaynak zod (`packages/shared/src/plan.ts`):
+  değişince `pnpm plan:gen` (JSON Schema + `contract/*.py` üretir; elle düzenleme). Senkron testleri
+  iki tarafta. 10 kabul senaryosu `tests/test_optimizer.py`.
 - LLM ayıklama `engine/pipeline/extract.py` (ADR 0010): Claude API (`ANTHROPIC_API_KEY`,
   `LLM_MODEL`), yapılandırılmış çıktı + pydantic doğrulaması, geçersizse bir kez yeniden deneme,
   `fallbacks: "default"`. Testler `LlmClient` sahtesiyle; testlerde gerçek API çağrısı yapılmaz.

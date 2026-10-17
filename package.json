@@ -17,6 +17,7 @@
     "engine:dev": "cd services/engine && uv run uvicorn engine.api:app --reload --port 8000",
     "engine:check": "cd services/engine && uv run ruff check . && uv run ruff format --check . && uv run mypy engine tests && uv run pytest",
     "engine:eval": "cd services/engine && uv run python -m engine.evaluation",
+    "plan:gen": "pnpm --filter @kartplan/shared gen:plan-schema && cd services/engine && uv run python scripts/gen_plan_models.py",
     "db:migrate": "pnpm --filter @kartplan/db db:migrate",
     "db:deploy": "pnpm --filter @kartplan/db db:deploy",
     "db:seed": "pnpm --filter @kartplan/db db:seed",

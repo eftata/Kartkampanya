@@ -9,12 +9,14 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "gen:plan-schema": "tsx scripts/gen-plan-schema.ts && prettier --write schema"
   },
   "dependencies": {
     "zod": "^4.6.6"
   },
   "devDependencies": {
+    "tsx": "4.23.15",
     "vitest": "^5.0.4"
   }
 }

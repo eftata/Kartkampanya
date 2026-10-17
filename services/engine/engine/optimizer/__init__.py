@@ -1,1 +1,1 @@
-"""CP-SAT optimizasyon modeli (Sprint 4). Durumsuzdur: PlanRequest -> PlanResponse."""
+"""Optimizasyon motoru (Sprint 4, ADR 0015). Durumsuzdur: PlanRequest -> PlanResponse."""

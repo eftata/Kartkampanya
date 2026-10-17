@@ -5,6 +5,9 @@ from fastapi import APIRouter, Depends, FastAPI
 from pydantic import BaseModel
 
 from engine import __version__
+from engine.optimizer.contract.request import PlanRequest
+from engine.optimizer.contract.response import PlanResponse
+from engine.optimizer.solve import optimize
 from engine.security import require_engine_token
 
 app = FastAPI(
@@ -33,7 +36,7 @@ def health() -> HealthResponse:
     return HealthResponse(status="ok")
 
 
-# ENGINE_TOKEN ile korunan uçlar. Sprint 2: /pipeline/run, Sprint 4: /optimize buraya eklenir.
+# ENGINE_TOKEN ile korunan uçlar.
 protected = APIRouter(dependencies=[Depends(require_engine_token)])
 
 
@@ -43,6 +46,12 @@ def info() -> InfoResponse:
     return InfoResponse(
         service="kartplan-engine", version=__version__, python=platform.python_version()
     )
+
+
+@protected.post("/optimize")
+def optimize_plan(request: PlanRequest) -> PlanResponse:
+    """Aylık plan: PlanRequest → PlanResponse (durumsuz; ADR 0015). CPU işi, iş parçacığında."""
+    return optimize(request)
 
 
 app.include_router(protected)

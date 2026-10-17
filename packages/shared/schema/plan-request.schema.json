@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "month": {
+      "type": "string",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+    },
+    "budget": {
+      "maxItems": 50,
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PlanBudgetItem"
+      }
+    },
+    "cards": {
+      "minItems": 1,
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PlanCard"
+      }
+    },
+    "campaigns": {
+      "maxItems": 1000,
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PlanCampaign"
+      }
+    },
+    "options": {
+      "$ref": "#/$defs/PlanOptions"
+    }
+  },
+  "required": ["month", "budget", "cards", "campaigns"],
+  "additionalProperties": false,
+  "$defs": {
+    "PlanBudgetItem": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "amount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000000
+        }
+      },
+      "required": ["category", "amount"],
+      "additionalProperties": false,
+      "description": "Kategori başına aylık harcama (kuruş). Kategori, kampanyalardaki adla aynı olmalı."
+    },
+    "PlanCard": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "limit": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "baseRateBps": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          }
+        }
+      },
+      "required": ["id", "limit", "baseRateBps"],
+      "additionalProperties": false
+    },
+    "PlanCampaign": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "cards": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "thresholdType": {
+          "type": "string",
+          "enum": ["SINGLE", "CUMULATIVE", "TXN_COUNT"]
+        },
+        "threshold": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000000
+        },
+        "txnCount": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tierRepeat": {
+          "type": "boolean"
+        },
+        "reward": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000000
+        },
+        "rewardBps": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cap": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "eligible": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "cards",
+        "categories",
+        "thresholdType",
+        "threshold",
+        "tierRepeat",
+        "reward",
+        "cap",
+        "eligible"
+      ],
+      "additionalProperties": false
+    },
+    "PlanOptions": {
+      "type": "object",
+      "properties": {
+        "maxCards": {
+          "default": 3,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "timeLimitMs": {
+          "default": 2000,
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 10000
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
