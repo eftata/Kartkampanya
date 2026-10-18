@@ -6,7 +6,8 @@ import { redirect } from "next/navigation";
 import { requestAccountDeletion } from "@/lib/account";
 import { SESSION_COOKIE_NAMES } from "@/lib/auth/routes";
 import { getCurrentUser } from "@/lib/auth/session";
-import { recordConsents, setMarketingConsent } from "@/lib/consent";
+import { track } from "@/lib/analytics";
+import { getConsentStatus, recordConsents, setMarketingConsent } from "@/lib/consent";
 
 export type FormState = { error?: string; saved?: boolean };
 
@@ -17,7 +18,10 @@ export async function giveConsentAction(_state: FormState, formData: FormData): 
   if (formData.get("aydinlatma") !== "on" || formData.get("acikRiza") !== "on") {
     return { error: "Devam etmek için aydınlatma metnini okuduğunu ve açık rızanı onayla." };
   }
+  // İlk onay = kayıt (ürün huni başlangıcı); sürüm değişikliğinde yeniden onay sayılmaz.
+  const firstConsent = (await getConsentStatus(user.id)).acikRiza === null;
   await recordConsents(user.id, formData.get("pazarlama") === "on");
+  if (firstConsent) track(user.id, "user_signed_up");
   redirect("/plan");
 }
 

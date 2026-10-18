@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     # psycopg'ye uygun hale `postgres_dsn` ile çevrilir.
     database_url: SecretStr = Field(default=SecretStr(""))
 
+    # Hata takibi (ADR 0022). Boşsa Sentry başlatılmaz.
+    sentry_dsn: str = ""
+    sentry_environment: str = "development"
+
     def postgres_dsn(self) -> tuple[str, str]:
         """(psycopg bağlantı adresi, şema adı). Prisma'nın `schema` parametresi ayrılır."""
         url = self.database_url.get_secret_value()

@@ -146,7 +146,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 - [x] Bildirim tercihleri ve tek tıkla abonelikten çıkma — Profilim → "E-posta bildirimleri" (`/profil#bildirimler`), API `GET/PUT /api/me/notifications`; tek tıkla çıkma: imzalı bağlantı, `/abonelik` onay sayfası, `List-Unsubscribe-Post`; ADR 0018
 - [x] KVKK: aydınlatma metni, açık rıza kaydı (versiyonlu), veri indirme, hesap silme — `/aydinlatma` (taslak, hukuki inceleme bekliyor), `/onay` kapısı (aydınlatma + yurt dışı aktarım açık rızası zorunlu, pazarlama ayrı), Profilim → "Verilerin ve gizlilik", `GET /api/me/export`, `DELETE /api/me`, 30 gün sonra kalıcı silme (`/api/cron/purge-accounts`); ADR 0019
 - [x] Landing page + herkese açık kampanya sayfaları (SEO), sitemap — landing: "Nasıl çalışır?", güvenceler, çağrı; `/kampanyalar` (onaylı ve süresi geçmemiş kampanyalar, program ve kategori filtresi URL'de), detay `/kampanyalar/<başlık-slug>-<id>` (kanonik adres, eski başlık yönlenir, süresi dolan `noindex`, taslak/reddedilen 404, Open Graph), `sitemap.xml` + `robots.txt` (kişisel sayfalar, admin ve API kapalı); kök adres `APP_URL`; ADR 0020
-- [ ] Rate limiting, güvenlik başlıkları, hata takibi (Sentry), ürün analitiği (PostHog) — **rate limiting ve başlıklar tamam**: proxy'de API ve yazma istekleri oturum başına 120/dk + IP başına 600/dk (429 + `Retry-After`), giriş bağlantısı e-posta başına 5/saat ve IP başına 20/15 dk, planı yeniden hesaplatma 10/saat; sayaçlar Redis'te (`REDIS_URL`, yoksa bellek); CSP (nonce'suz), HSTS, `X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, COOP; ADR 0021. Sentry ve PostHog bekliyor
+- [x] Rate limiting, güvenlik başlıkları, hata takibi (Sentry), ürün analitiği (PostHog) — istek sınırı ve başlıklar ADR 0021; Sentry (web sunucu + tarayıcı, motor API + veri hattı; yalnızca hatalar, kullanıcı/çerez/gövde silinir, e-posta ve uzun rakam dizileri maskelenir) ve PostHog (AB; tarayıcıda çerezsiz anonim sayfa görüntüleme, adres parametreleri izin listesiyle; sunucudan takma adlı huni olayları: kayıt → kart → harcama profili → plan → katılım) ADR 0022; DSN/anahtar yoksa kapalı
 
 **Kabul:** güvenlik ve KVKK kontrol listesi (aşağıda) tamamen işaretli.
 
@@ -712,7 +712,7 @@ Bir görev ancak aşağıdaki "tamamlandı" tanımını karşılıyorsa kapanır
 - [x] Açık rıza versiyonlu kaydediliyor (`Consent`), pazarlama rızası ayrı
 - [x] Veri indirme (`/api/me/export`) ve hesap silme çalışıyor
 - [x] Veri saklama süresi tanımlı; silinen hesaplar 30 gün sonra kalıcı silinir
-- [ ] Analitik araçları kişisel veri almadan (e-posta, isim) çalışıyor
+- [x] Analitik araçları kişisel veri almadan (e-posta, isim) çalışıyor — takma adlı kimlik (HMAC), çerez yok, adres parametreleri temizlenir; e2e sahte toplayıcıyla doğrular (ADR 0022). PostHog projesinde "Discard client IP data" açılmalı
 - [ ] Veri lokasyonu ve yurt dışı aktarım durumu yazılı olarak belirlendi
 - [ ] VERBİS kayıt yükümlülüğü kontrol edildi
 - [ ] Pazarlama e-postaları için İYS kaydı; işlemsel bildirimler ayrı şablon

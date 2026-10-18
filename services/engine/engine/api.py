@@ -9,6 +9,10 @@ from engine.optimizer.contract.request import PlanRequest
 from engine.optimizer.contract.response import PlanResponse
 from engine.optimizer.solve import optimize
 from engine.security import require_engine_token
+from engine.settings import get_settings
+from engine.telemetry import init_sentry
+
+init_sentry(get_settings())
 
 app = FastAPI(
     title="KartPlan Engine",

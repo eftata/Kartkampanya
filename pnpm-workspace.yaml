@@ -3,6 +3,8 @@ packages:
   - "packages/*"
 
 ignoredBuiltDependencies:
+  - "@sentry/cli"
+  - core-js
   - sharp
   - unrs-resolver
 

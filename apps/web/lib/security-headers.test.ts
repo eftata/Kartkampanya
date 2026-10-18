@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { contentSecurityPolicy, securityHeaders } from "./security-headers";
+import { contentSecurityPolicy, originOf, securityHeaders } from "./security-headers";
 
 const byKey = (headers: { key: string; value: string }[]) =>
   Object.fromEntries(headers.map((h) => [h.key, h.value]));
@@ -30,5 +30,29 @@ describe("güvenlik başlıkları", () => {
     expect(dev["Content-Security-Policy"]).toContain("'unsafe-eval'");
     expect(dev["Content-Security-Policy"]).toContain("connect-src 'self' ws:");
     expect(dev["Strict-Transport-Security"]).toBeUndefined();
+  });
+});
+
+describe("dış servisler", () => {
+  it("Sentry DSN ve PostHog adresi connect-src'ye köken olarak eklenir", () => {
+    const csp = contentSecurityPolicy({
+      dev: false,
+      telemetry: [
+        "https://abc123@o42.ingest.de.sentry.io/7",
+        "https://eu.i.posthog.com/",
+        undefined,
+        "javascript:alert(1)",
+      ],
+    });
+    expect(csp).toContain(
+      "connect-src 'self' https://o42.ingest.de.sentry.io https://eu.i.posthog.com;",
+    );
+    expect(csp).not.toContain("abc123");
+  });
+
+  it("originOf", () => {
+    expect(originOf("http://localhost:3100/__posthog")).toBe("http://localhost:3100");
+    expect(originOf("bozuk")).toBeNull();
+    expect(originOf(undefined)).toBeNull();
   });
 });

@@ -12,6 +12,8 @@ const PORT = Number(process.env.E2E_PORT ?? 3100);
 const baseURL = `http://localhost:${PORT}`;
 const ENGINE_PORT = Number(process.env.E2E_ENGINE_PORT ?? 8100);
 const engineURL = `http://localhost:${ENGINE_PORT}`;
+const POSTHOG_PORT = Number(process.env.E2E_POSTHOG_PORT ?? 8200);
+const posthogURL = `http://localhost:${POSTHOG_PORT}`;
 // Test motoru ile test sunucusu arasında paylaşılan anahtar (gerçek ortamın anahtarı değil).
 const engineToken = "e2e-engine-token";
 
@@ -32,6 +34,13 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
+    {
+      // Sahte PostHog: analitik olaylarında kişisel veri olmadığını doğrulamak için (analytics.spec).
+      command: "node e2e/fake-posthog.mjs",
+      url: `${posthogURL}/health`,
+      reuseExistingServer: !process.env.CI,
+      env: { FAKE_POSTHOG_PORT: String(POSTHOG_PORT) },
+    },
     {
       // Optimizasyon motoru (plan sayfası). Python 3.12 + uv gerekir.
       command: `uv run uvicorn engine.api:app --port ${ENGINE_PORT}`,
@@ -54,6 +63,8 @@ export default defineConfig({
         ENGINE_TOKEN: engineToken,
         CRON_SECRET: E2E_CRON_SECRET,
         APP_URL: baseURL,
+        NEXT_PUBLIC_POSTHOG_KEY: "phc_e2e",
+        NEXT_PUBLIC_POSTHOG_HOST: posthogURL,
       },
     },
   ],

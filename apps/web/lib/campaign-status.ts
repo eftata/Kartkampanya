@@ -3,6 +3,7 @@ import "server-only";
 import { getPrisma } from "@kartplan/db";
 import type { CampaignStatusDto, CampaignStatusInput } from "@kartplan/shared";
 
+import { track } from "@/lib/analytics";
 import type { MutationResult } from "@/lib/result";
 
 /**
@@ -42,5 +43,6 @@ export async function setCampaignStatus(
     update: data,
     select: { joined: true, inPlan: true },
   });
+  if (status.joined && !wasJoined) track(userId, "campaign_joined");
   return { ok: true, data: status };
 }

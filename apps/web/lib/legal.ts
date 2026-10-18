@@ -16,8 +16,8 @@ export const CONSENT_KINDS = {
 } as const;
 
 export const LEGAL_VERSIONS = {
-  aydinlatma: "2026-10-17",
-  acikRiza: "2026-10-17",
+  aydinlatma: "2026-10-18",
+  acikRiza: "2026-10-18",
   pazarlama: "2026-10-17",
 } as const;
 
@@ -41,7 +41,8 @@ export const AYDINLATMA_METNI: LegalSection[] = [
     paragraphs: [
       "Kimlik ve iletişim: e-posta adresi; Google ile girişte ad ve profil fotoğrafı.",
       "Hizmet verileri: seçtiğin kart ürünleri (banka, program, kart adı), isteğe bağlı kart limiti ve hesap kesim günü, kartlara verdiğin takma adlar, kategori başına aylık harcama tutarları ve tercih ettiğin markalar, kampanyalara katıldığına dair işaretlerin, hesaplanan aylık planların, bildirim tercihlerin ve gönderilen bildirimlerin kaydı.",
-      "İşlem güvenliği: oturum kayıtları ve sunucu günlükleri.",
+      "İşlem güvenliği: oturum kayıtları, sunucu günlükleri ve hata kayıtları (e-posta, ad ve çerez içermez).",
+      "Kullanım istatistikleri: ziyaret edilen sayfalar (adres parametreleri olmadan) ve hesabına bağlı ürün adımları (kayıt, kart ekleme, harcama profili, plan görüntüleme, kampanyaya katılım). Bu adımlar e-postan ya da adınla değil, yalnızca bizim çözebileceğimiz takma bir kimlikle kaydedilir; tarayıcına analitik çerezi yazılmaz.",
       "Kart numarası, CVV, son kullanma tarihi, şifre ya da banka hesap bilgisi hiçbir koşulda alınmaz ve saklanmaz.",
     ],
   },
@@ -49,14 +50,15 @@ export const AYDINLATMA_METNI: LegalSection[] = [
     title: "İşleme amaçları ve hukuki sebepler",
     paragraphs: [
       "Hesabının oluşturulması, girişin sağlanması, kartlarına ve harcama alanlarına uyan kampanyaların listelenmesi, aylık harcama planının hesaplanması ve hizmet bildirimlerinin (katılım hatırlatma, kampanya bitiş uyarısı, haftalık özet) gönderilmesi: sözleşmenin kurulması ve ifası (KVKK m. 5/2-c).",
-      "Hizmetin güvenliği, kötüye kullanımın önlenmesi ve hataların giderilmesi: meşru menfaat (KVKK m. 5/2-f) ve hukuki yükümlülük (m. 5/2-ç).",
+      "Hizmetin güvenliği, kötüye kullanımın önlenmesi (istek sınırlama) ve hataların giderilmesi: meşru menfaat (KVKK m. 5/2-f) ve hukuki yükümlülük (m. 5/2-ç).",
+      "Hizmetin hangi adımlarının kullanıldığını ölçüp geliştirmek (kullanım istatistikleri): meşru menfaat (KVKK m. 5/2-f).",
       "Pazarlama iletileri: yalnızca ayrıca izin verirsen (açık rıza, m. 5/1); izin vermemen hizmeti kullanmana engel değildir.",
     ],
   },
   {
     title: "Aktarım",
     paragraphs: [
-      "Verilerin, hizmetin çalışması için barındırma (web uygulaması ve veritabanı), e-posta gönderimi ve hata takibi hizmeti aldığımız sağlayıcılarla paylaşılır. Bu sağlayıcıların bir kısmının sunucuları yurt dışındadır; bu aktarım için açık rızan istenir (KVKK m. 9).",
+      "Verilerin, hizmetin çalışması için barındırma (web uygulaması ve veritabanı), e-posta gönderimi, hata takibi (Sentry) ve kullanım istatistikleri (PostHog, Avrupa Birliği sunucuları) hizmeti aldığımız sağlayıcılarla paylaşılır. Bu sağlayıcıların bir kısmının sunucuları yurt dışındadır; bu aktarım için açık rızan istenir (KVKK m. 9).",
       "Bankalara ya da reklam ağlarına kişisel veri aktarılmaz. Ürün analitiği araçlarına e-posta ya da ad gönderilmez.",
       "Kampanya metinlerini işlemek için kullanılan yapay zekâ hizmetine yalnızca bankaların herkese açık kampanya metinleri gönderilir; senin verilerin gönderilmez.",
     ],
@@ -77,7 +79,7 @@ export const AYDINLATMA_METNI: LegalSection[] = [
 ];
 
 export const ACIK_RIZA_METNI =
-  "Kişisel verilerimin, KartPlan'ın hizmetin sunulması için çalıştığı ve sunucuları yurt dışında bulunan barındırma, e-posta ve hata takibi sağlayıcılarına aktarılmasına, Aydınlatma Metni'nde açıklanan kapsamda açık rıza veriyorum.";
+  "Kişisel verilerimin, KartPlan'ın hizmetin sunulması için çalıştığı ve sunucuları yurt dışında bulunan barındırma, e-posta, hata takibi ve kullanım istatistiği sağlayıcılarına aktarılmasına, Aydınlatma Metni'nde açıklanan kapsamda açık rıza veriyorum.";
 
 export const PAZARLAMA_METNI =
   "KartPlan'ın yeni özellikler ve kampanyalarla ilgili duyurularını e-posta ile almak istiyorum. (İsteğe bağlı; istediğin zaman Profilim'den kapatabilirsin.)";

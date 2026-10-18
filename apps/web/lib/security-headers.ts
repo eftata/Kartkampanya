@@ -4,12 +4,35 @@
  * CSP nonce'suz: `cacheComponents` statik kabukları build'de üretir, nonce her istekte yeni
  * olmalıydı (tüm sayfalar dinamik olurdu). Bu yüzden satır içi betiklere (Next'in RSC yükü)
  * `'unsafe-inline'` izni var; dış kaynaklı betik, çerçeveleme, eklenti, `<base>` ve başka adrese
- * form gönderimi yasak. Yeni dış servis (Sentry, PostHog) eklenince `connect-src`'ye eklenir.
+ * form gönderimi yasak. Sentry ve PostHog adresleri ortamdan `connect-src`'ye eklenir.
  */
 
-export type SecurityHeaderOptions = { dev: boolean; appUrl?: string };
+export type SecurityHeaderOptions = {
+  dev: boolean;
+  appUrl?: string;
+  /** Tarayıcının veri gönderdiği dış servisler (Sentry, PostHog) — adres ya da DSN. */
+  telemetry?: (string | undefined)[];
+};
 
-export function contentSecurityPolicy({ dev, appUrl }: SecurityHeaderOptions): string {
+/** Adres ya da Sentry DSN'i → köken (`https://o1.ingest.sentry.io`); geçersizse yok. */
+export function originOf(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    const { protocol, host } = new URL(url);
+    return protocol === "https:" || protocol === "http:" ? `${protocol}//${host}` : null;
+  } catch {
+    return null;
+  }
+}
+
+export function contentSecurityPolicy({
+  dev,
+  appUrl,
+  telemetry = [],
+}: SecurityHeaderOptions): string {
+  const telemetryOrigins = [
+    ...new Set(telemetry.map(originOf).filter((origin): origin is string => origin !== null)),
+  ];
   const directives: Record<string, string[]> = {
     "default-src": ["'self'"],
     // Geliştirmede React hata ayıklama bilgisi için eval kullanır.
@@ -18,7 +41,7 @@ export function contentSecurityPolicy({ dev, appUrl }: SecurityHeaderOptions): s
     // Google ile girişte profil fotoğrafı.
     "img-src": ["'self'", "data:", "blob:", "https://*.googleusercontent.com"],
     "font-src": ["'self'"],
-    "connect-src": ["'self'", ...(dev ? ["ws:"] : [])],
+    "connect-src": ["'self'", ...telemetryOrigins, ...(dev ? ["ws:"] : [])],
     "object-src": ["'none'"],
     "base-uri": ["'self'"],
     // Google ile giriş formu Google'a yönlenir.

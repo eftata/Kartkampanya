@@ -3,6 +3,7 @@ import "server-only";
 import { getPrisma } from "@kartplan/db";
 import type { SpendCategory, SpendProfileDto, SpendProfileInput } from "@kartplan/shared";
 
+import { track } from "@/lib/analytics";
 import type { MutationResult } from "@/lib/result";
 
 /** Harcama profili için ana kategoriler ve markaları (adlara göre sıralı). */
@@ -71,5 +72,6 @@ export async function saveSpendProfile(
       }),
     ),
   ]);
+  track(userId, "spend_profile_saved", { categories: input.items.length });
   return { ok: true, data: await getSpendProfile(userId) };
 }

@@ -121,7 +121,8 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   klonda `pnpm build`.
 - Turbo **strict env** modunda: build sırasında okunan her ortam değişkeni `turbo.json` →
   `tasks.build.env` listesine eklenmeli (yoksa build onu görmez). Şu an: `AUTH_GOOGLE_ID/SECRET`,
-  `APP_URL` (kök layout `metadataBase`, güvenlik başlıkları).
+  `APP_URL` (kök layout `metadataBase`, güvenlik başlıkları), `NEXT_PUBLIC_SENTRY_*`,
+  `NEXT_PUBLIC_POSTHOG_*`.
 - Staging: web → Vercel (`apps/web`), Postgres + motor → Railway. Migration'lar Vercel build
   komutunda `pnpm db:deploy` ile uygulanır.
 
@@ -200,6 +201,18 @@ campaignPath` (`/kampanyalar/<slug>-<id>`, id cuid → son tireden sonrası); fa
 - Başlıklar `lib/security-headers.ts` → `next.config.ts headers()` (build anında). CSP nonce'suz
   (`'unsafe-inline'` betik; statik kabuklar için). Yeni dış kaynak (Sentry, PostHog, CDN) →
   ilgili CSP yönergesine ekle; e2e `security.spec.ts` CSP ihlali olmadığını denetler.
+
+## Hata takibi ve analitik — ayrıntı: docs/adr/0022-sentry-posthog.md
+
+- Sentry: `instrumentation.ts` (sunucu, `onRequestError`), `instrumentation-client.ts` (tarayıcı),
+  motor `engine/telemetry.py`. Yalnızca hatalar; temizleme `lib/telemetry/scrub.ts` (kullanıcı,
+  çerez, gövde silinir; e-posta/uzun rakam maskelenir; adres parametreleri izin listesiyle).
+  Yeni güvenli URL parametresi → `SAFE_QUERY_PARAMS`.
+- PostHog tarayıcıda yalnızca anonim, çerezsiz sayfa görüntüleme. Kullanıcı olayları sunucudan:
+  `track(userId, olay, { sayı/etiket })` (`lib/analytics.ts`; kimlik HMAC, e-posta/ad/tutar asla).
+  Yeni olay → `AnalyticsEvent` birliğine ekle.
+- Ayarlar `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_POSTHOG_KEY/HOST` (build'de gömülür; boşsa kapalı),
+  motor `SENTRY_DSN`. e2e sahte toplayıcı `e2e/fake-posthog.mjs` (port 8200) ile koşar.
 
 ## KVKK — ayrıntı: docs/adr/0019-kvkk.md
 

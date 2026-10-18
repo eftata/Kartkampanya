@@ -4,6 +4,7 @@ import { loadEnvConfig } from "@next/env";
 import type { NextConfig } from "next";
 
 import { securityHeaders } from "./lib/security-headers";
+import { posthogHost, posthogKey, sentryDsn } from "./lib/telemetry/config";
 
 // Ortam değişkenleri monorepo kökündeki .env dosyalarından okunur (zaten tanımlı olanlar ezilmez).
 // forceReload: Next zaten apps/web için yükleme yapıp sonucu önbelleğe almış olur.
@@ -26,6 +27,7 @@ const nextConfig: NextConfig = {
       headers: securityHeaders({
         dev: process.env.NODE_ENV === "development",
         appUrl: process.env.APP_URL,
+        telemetry: [sentryDsn(), posthogKey() ? posthogHost() : undefined],
       }),
     },
   ],

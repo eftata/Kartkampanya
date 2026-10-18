@@ -54,9 +54,11 @@ istekler geçer (ADR 0021).
    - **Branch:** `main`
 3. **Variables:**
 
-   | Değişken       | Değer                                                |
-   | -------------- | ---------------------------------------------------- |
-   | `ENGINE_TOKEN` | `openssl rand -hex 32` çıktısı (Vercel'de de aynısı) |
+   | Değişken             | Değer                                                |
+   | -------------------- | ---------------------------------------------------- |
+   | `ENGINE_TOKEN`       | `openssl rand -hex 32` çıktısı (Vercel'de de aynısı) |
+   | `SENTRY_DSN`         | (opsiyonel) Sentry motor projesinin DSN'i            |
+   | `SENTRY_ENVIRONMENT` | (opsiyonel) `staging`                                |
 
    `PORT` değişkenini Railway kendisi verir; imaj onu dinler.
 
@@ -85,6 +87,7 @@ Kampanya taraması motorla aynı imajı kullanan ayrı bir **cron** servisidir (
    | `ANTHROPIC_API_KEY`   | Claude API anahtarı (yalnızca bu serviste)                    |
    | `LLM_MODEL`           | (opsiyonel) varsayılan `claude-opus-5-5`                      |
    | `PIPELINE_USER_AGENT` | `KartPlanBot/0.1 (+https://<alan-adı>; <iletişim e-postası>)` |
+   | `SENTRY_DSN`          | (opsiyonel) motorla aynı DSN                                  |
 
 5. Elle deneme: servis → **Run now**; loglarda her adaptör için
    `bulunan · değişmeyen · ayıklanan · hata` satırı, sonunda `Süresi dolan kampanya: N` görünür;
@@ -135,6 +138,10 @@ e-postalar spama düşer. Gerekenler: host, port (465 → TLS), kullanıcı, şi
    | `CRON_SECRET`                                 | `openssl rand -hex 32`           |
    | `APP_URL`                                     | `https://<staging-alan-adı>`     |
    | `REDIS_URL`                                   | Railway `REDIS_PUBLIC_URL`       |
+   | `NEXT_PUBLIC_SENTRY_DSN`                      | (opsiyonel) Sentry web projesi   |
+   | `NEXT_PUBLIC_SENTRY_ENVIRONMENT`              | `staging`                        |
+   | `NEXT_PUBLIC_POSTHOG_KEY`                     | (opsiyonel) PostHog `phc_...`    |
+   | `NEXT_PUBLIC_POSTHOG_HOST`                    | `https://eu.i.posthog.com`       |
 
    `AUTH_URL` gerekmez: Auth.js Vercel'de adresi istekten alır (`trustHost`).
    Google değişkenlerini ve `APP_URL`'i sonradan eklersen ya da değiştirirsen **yeniden deploy et**:
@@ -175,3 +182,15 @@ DATABASE_URL="<Railway DATABASE_PUBLIC_URL>" SEED_ADMIN_EMAIL="sen@ornek.com" pn
 - **Motor:** Railway → servis → Deployments → önceki deploy → **Redeploy**.
 - **Veritabanı:** Prisma migration'ları geri alınmaz; geri dönüş için yeni bir migration yaz.
   Veri kaybı olursa Railway yedeğinden geri yükle.
+
+## Hata takibi ve analitik (ADR 0022)
+
+- **Sentry:** iki proje önerilir (web: Next.js, motor: Python/FastAPI). DSN'leri yukarıdaki
+  tablolara gir; web DSN'i build'de gömülür (değişince yeniden deploy). Kaynak haritası yükleme
+  (`withSentryConfig` + `SENTRY_AUTH_TOKEN`) henüz yok: tarayıcı hatalarında yığın izi küçültülmüş
+  kodu gösterir. Sentry projesinde **Settings → Security & Privacy → Data Scrubber** açık kalsın,
+  "Prevent Storing of IP Addresses" açılsın.
+- **PostHog:** AB bölgesinde (`eu.posthog.com`) proje aç. **Project settings → "Discard client IP
+  data"** açılmalı (tarayıcı olaylarında IP saklanmasın). Oturum kaydı, anketler, otomatik yakalama
+  kodda kapalı; proje ayarlarında da açma. Huni: `user_signed_up → card_added →
+spend_profile_saved → plan_viewed`; ikinci hafta dönüşü `plan_viewed` tekrarından (Retention).

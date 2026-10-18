@@ -21,6 +21,7 @@ from engine.pipeline.fetcher import PoliteFetcher
 from engine.pipeline.run import run_source
 from engine.pipeline.store import CampaignStore, connect
 from engine.settings import Settings, get_settings
+from engine.telemetry import init_sentry
 
 TURKEY = timezone(timedelta(hours=3))
 
@@ -43,6 +44,7 @@ async def main(names: Sequence[str]) -> int:
         print("Kayıtlı adaptör yok.")
 
     settings = get_settings()
+    init_sentry(settings)
     failed = False
     async with connect(settings) as conn:
         store = CampaignStore(conn)
