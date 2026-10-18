@@ -105,6 +105,7 @@ export async function exportUserData(userId: string, now = new Date()) {
           page: true,
           status: true,
           createdAt: true,
+          campaign: { select: { title: true } },
         },
       },
       adminAuditLogs: {

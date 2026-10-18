@@ -15,8 +15,15 @@ const KINDS = Object.keys(FEEDBACK_KIND_LABELS) as FeedbackKind[];
  * Geri bildirim formu. Eylem elle çağrılır (`<form action>` hata alınca da formu sıfırlar);
  * başarıda alanlar temizlenir ve teşekkür mesajı görünür.
  */
-export function FeedbackForm({ page }: { page: string | null }) {
-  const [kind, setKind] = useState<FeedbackKind>("IDEA");
+export function FeedbackForm({
+  page,
+  campaign,
+}: {
+  page: string | null;
+  /** "Bu kampanyada hata var" bağlantısından gelindiyse. */
+  campaign: { id: string; title: string } | null;
+}) {
+  const [kind, setKind] = useState<FeedbackKind>(campaign ? "DATA" : "IDEA");
   const [rating, setRating] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const [state, setState] = useState<{ ok?: boolean; error?: string }>({});
@@ -29,7 +36,13 @@ export function FeedbackForm({ page }: { page: string | null }) {
       onSubmit={(event) => {
         event.preventDefault();
         startTransition(async () => {
-          const result = await sendFeedbackAction({ kind, rating, message, page });
+          const result = await sendFeedbackAction({
+            kind,
+            rating,
+            message,
+            page,
+            campaignId: campaign?.id ?? null,
+          });
           setState(result);
           if (result.ok) {
             setMessage("");
@@ -38,6 +51,14 @@ export function FeedbackForm({ page }: { page: string | null }) {
         });
       }}
     >
+      {campaign && (
+        <p className="bg-muted rounded-lg px-3 py-2 text-sm">
+          Kampanya: <strong>{campaign.title}</strong>
+          <span className="text-muted-foreground block text-xs">
+            Hangi bilginin yanlış olduğunu (tarih, tutar, kart, katılım) yazman yeterli.
+          </span>
+        </p>
+      )}
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">Konu</legend>
         <div className="flex flex-wrap gap-2">

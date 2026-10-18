@@ -238,6 +238,13 @@ campaignPath` (`/kampanyalar/<slug>-<id>`, id cuid → son tireden sonrası); fa
   ile, 180 gün), kilometre taşları `markFirstCard` / `markPlanViewed` (yalnızca boşken).
 - Huniye yeni adım → `User`'a zaman alanı + `computeFunnel` + veri kopyası + aydınlatma metni.
 
+## Veri doğruluğu — ayrıntı: docs/adr/0026-data-quality.md
+
+- Onay kontrolleri saf `lib/campaign-checks.ts` (`error` onayı engeller, `warning` gösterilir;
+  formda canlı, `reviewCampaign` approve'da tekrar). Yeni kural → buraya + testine.
+- Mükerrer adayı `findSimilarCampaigns`, kampanya hata bildirimi `Feedback.campaignId`
+  (`/geri-bildirim?kampanya=`), panoda `getDataQuality` (bildirimli + kaynakta kaybolan).
+
 ## KVKK — ayrıntı: docs/adr/0019-kvkk.md
 
 - Metinler ve sürümler `apps/web/lib/legal.ts` (taslak; metin değişince sürümü artır → herkes yeniden

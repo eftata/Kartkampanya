@@ -10,6 +10,8 @@ import type {
 } from "@kartplan/shared";
 
 import { audit, diff } from "@/lib/admin-audit";
+import { campaignChecks, SIMILAR_TITLE_THRESHOLD, titleSimilarity } from "@/lib/campaign-checks";
+import { turkeyToday } from "@/lib/campaign-match";
 import type { Actor } from "@/lib/admin-audit";
 import type { MutationResult } from "@/lib/result";
 
@@ -67,6 +69,37 @@ export async function getAdminCampaign(id: string) {
   });
 }
 export type AdminCampaign = NonNullable<Awaited<ReturnType<typeof getAdminCampaign>>>;
+
+/**
+ * Olası mükerrer: aynı programda, tarihleri çakışan, başlığı benzer taslak ya da onaylı
+ * kampanyalar (aynı kampanya hem veri hattından hem elle girilmiş olabilir; ADR 0026).
+ */
+export async function findSimilarCampaigns(campaign: {
+  id: string;
+  programId: string;
+  title: string;
+  startsAt: Date;
+  endsAt: Date;
+}) {
+  const candidates = await getPrisma().campaign.findMany({
+    where: {
+      id: { not: campaign.id },
+      programId: campaign.programId,
+      status: { in: ["DRAFT", "APPROVED"] },
+      startsAt: { lte: campaign.endsAt },
+      endsAt: { gte: campaign.startsAt },
+    },
+    select: { id: true, title: true, status: true, startsAt: true, endsAt: true },
+    take: 200,
+  });
+  return candidates
+    .map((candidate) => ({
+      ...candidate,
+      similarity: titleSimilarity(campaign.title, candidate.title),
+    }))
+    .filter((candidate) => candidate.similarity >= SIMILAR_TITLE_THRESHOLD)
+    .sort((a, b) => b.similarity - a.similarity);
+}
 
 /** Kural düzenleyicinin seçenekleri: kategoriler ve markaları. */
 export async function getRuleOptions() {
@@ -150,6 +183,11 @@ export async function reviewCampaign(
     const input = review.campaign;
     if (review.action === "approve" && input.endsAt < toDay(now)) {
       return fail("conflict", "Bitiş tarihi geçmiş kampanya onaylanamaz.");
+    }
+    if (review.action === "approve") {
+      // Tutarsız veri yayına çıkmasın (ADR 0026); taslak olarak kaydetmek serbest.
+      const blocking = campaignChecks(input, turkeyToday(now)).find((c) => c.level === "error");
+      if (blocking) return fail("conflict", `Onaylanamaz: ${blocking.message}`);
     }
     const invalid = await checkReferences(tx, campaign.programId, input);
     if (invalid) return fail("conflict", invalid);

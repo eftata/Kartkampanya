@@ -6,7 +6,7 @@ import { turkeyToday } from "@/lib/campaign-match";
 import { JOBS, PIPELINE_MAX_AGE_HOURS } from "@/lib/jobs";
 import type { JobName } from "@/lib/jobs";
 import { pingRateLimitStore } from "@/lib/rate-limit";
-import { runHealth } from "@/lib/system-health";
+import { missingFromSource, runHealth } from "@/lib/system-health";
 import type { ComponentCheck, Components, ComponentState } from "@/lib/system-health";
 
 /**
@@ -129,4 +129,67 @@ export async function getSystemOverview(now = new Date()) {
     },
   };
 }
+/**
+ * Veri doğruluğu (ADR 0026): kullanıcıların hata bildirdiği kampanyalar ve kaynağın son
+ * taramalarında artık görünmeyen yayındaki kampanyalar.
+ */
+export async function getDataQuality(now = new Date()) {
+  const prisma = getPrisma();
+  const todayDate = new Date(`${turkeyToday(now)}T00:00:00Z`);
+  const [reported, live] = await Promise.all([
+    prisma.feedback.groupBy({
+      by: ["campaignId"],
+      where: { campaignId: { not: null }, status: { in: ["NEW", "READ"] } },
+      _count: { _all: true },
+    }),
+    prisma.campaign.findMany({
+      where: { status: "APPROVED", endsAt: { gte: todayDate }, sourceId: { not: null } },
+      select: {
+        id: true,
+        title: true,
+        lastSeenAt: true,
+        source: {
+          select: {
+            runs: {
+              where: { status: "SUCCEEDED" },
+              orderBy: { startedAt: "desc" },
+              take: 1,
+              select: { startedAt: true },
+            },
+          },
+        },
+      },
+    }),
+  ]);
+  const reportedIds = reported.flatMap((row) => (row.campaignId ? [row.campaignId] : []));
+  const titles = new Map(
+    (
+      await prisma.campaign.findMany({
+        where: { id: { in: reportedIds } },
+        select: { id: true, title: true },
+      })
+    ).map((row) => [row.id, row.title]),
+  );
+  return {
+    reported: reported
+      .flatMap((row) =>
+        row.campaignId
+          ? [
+              {
+                id: row.campaignId,
+                title: titles.get(row.campaignId) ?? "",
+                count: row._count._all,
+              },
+            ]
+          : [],
+      )
+      .sort((a, b) => b.count - a.count),
+    missing: live
+      .filter((campaign) =>
+        missingFromSource(campaign.lastSeenAt, campaign.source?.runs[0]?.startedAt ?? null),
+      )
+      .map(({ id, title, lastSeenAt }) => ({ id, title, lastSeenAt })),
+  };
+}
+
 export type SystemOverview = Awaited<ReturnType<typeof getSystemOverview>>;

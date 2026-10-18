@@ -49,3 +49,15 @@ export const RUN_HEALTH_LABELS: Record<RunHealth, string> = {
   stuck: "Takıldı",
   never: "Hiç çalışmadı",
 };
+
+/** Kaynakta görünmemeye tolerans: tek bir taramada listeden düşmesi (sayfalama vb.) yeterli değil. */
+const MISSING_AFTER_HOURS = 36;
+
+/**
+ * Onaylı kampanya kaynağın son başarılı taramalarında listede görünmüyor mu? Banka kampanyayı
+ * kaldırmış ya da erken bitirmiş olabilir (ADR 0026). Kaynak hiç başarıyla taranmadıysa bilinemez.
+ */
+export function missingFromSource(lastSeenAt: Date, lastSuccessfulRunAt: Date | null): boolean {
+  if (!lastSuccessfulRunAt) return false;
+  return lastSuccessfulRunAt.getTime() - lastSeenAt.getTime() > MISSING_AFTER_HOURS * HOUR;
+}

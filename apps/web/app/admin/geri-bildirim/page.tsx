@@ -65,6 +65,11 @@ async function FeedbackInbox({ searchParams }: PageProps<"/admin/geri-bildirim">
                   </span>
                   {item.rating !== null && <span>Puan: {item.rating}/5</span>}
                   {item.page && <span>Sayfa: {item.page}</span>}
+                  {item.campaign && (
+                    <Link href={`/admin/kampanyalar/${item.campaign.id}`} className="underline">
+                      Kampanya: {item.campaign.title}
+                    </Link>
+                  )}
                   <span>{timeFormat.format(new Date(item.createdAt))}</span>
                   <a href={`mailto:${item.email}`} className="underline">
                     {item.email}

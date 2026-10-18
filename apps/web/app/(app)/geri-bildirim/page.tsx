@@ -3,7 +3,7 @@ import { Suspense } from "react";
 
 import { FeedbackForm } from "@/components/feedback-form";
 import { requireUser } from "@/lib/auth/session";
-import { getMyFeedback } from "@/lib/feedback";
+import { getMyFeedback, getReportableCampaign } from "@/lib/feedback";
 import { FEEDBACK_KIND_LABELS, FEEDBACK_STATUS_FOR_USER } from "@/lib/feedback-labels";
 
 export const metadata: Metadata = { title: "Geri bildirim" };
@@ -21,12 +21,17 @@ function pageFrom(value: string | string[] | undefined): string | null {
 
 async function FeedbackContent({ searchParams }: PageProps<"/geri-bildirim">) {
   const user = await requireUser();
-  const page = pageFrom((await searchParams).sayfa);
-  const mine = await getMyFeedback(user.id);
+  const params = await searchParams;
+  const page = pageFrom(params.sayfa);
+  const campaignParam = Array.isArray(params.kampanya) ? params.kampanya[0] : params.kampanya;
+  const [mine, campaign] = await Promise.all([
+    getMyFeedback(user.id),
+    campaignParam ? getReportableCampaign(campaignParam) : null,
+  ]);
   return (
     <div className="space-y-8">
       <div className="rounded-xl border p-4">
-        <FeedbackForm page={page} />
+        <FeedbackForm page={page} campaign={campaign} />
       </div>
       {mine.length > 0 && (
         <section aria-label="Gönderdiklerin" className="space-y-3">
@@ -41,6 +46,9 @@ async function FeedbackContent({ searchParams }: PageProps<"/geri-bildirim">) {
                   </span>
                   <span>{FEEDBACK_STATUS_FOR_USER[item.status]}</span>
                 </p>
+                {item.campaign && (
+                  <p className="text-muted-foreground text-xs">Kampanya: {item.campaign.title}</p>
+                )}
                 <p className="line-clamp-3 whitespace-pre-wrap">{item.message}</p>
               </li>
             ))}

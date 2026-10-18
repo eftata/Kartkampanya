@@ -32,6 +32,8 @@ export const FeedbackInput = z
       .transform((value) => value.split(/[?#]/)[0] ?? value)
       .nullable()
       .default(null),
+    /** "Bu kampanyada hata var": ilgili kampanya (yalnızca onaylı ya da süresi dolmuş). */
+    campaignId: z.string().min(1).max(100).nullable().default(null),
   })
   .strict();
 export type FeedbackInput = z.infer<typeof FeedbackInput>;
@@ -45,6 +47,7 @@ export const FeedbackDto = z.object({
   rating: z.number().int().nullable(),
   message: z.string(),
   page: z.string().nullable(),
+  campaign: z.object({ id: z.string(), title: z.string() }).nullable(),
   status: FeedbackStatus,
   createdAt: z.iso.datetime(),
 });

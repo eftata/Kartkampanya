@@ -10,7 +10,13 @@ describe("FeedbackInput", () => {
         message: "  Plan sayfası harika  ",
         page: "/plan?ay=x#y",
       }),
-    ).toEqual({ kind: "IDEA", rating: null, message: "Plan sayfası harika", page: "/plan" });
+    ).toEqual({
+      kind: "IDEA",
+      rating: null,
+      message: "Plan sayfası harika",
+      page: "/plan",
+      campaignId: null,
+    });
     expect(FeedbackInput.parse({ kind: "BUG", message: "Hata var", rating: 2 })).toMatchObject({
       rating: 2,
       page: null,

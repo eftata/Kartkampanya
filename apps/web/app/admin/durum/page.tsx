@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { requireAdmin } from "@/lib/auth/session";
 import { overallState, RUN_HEALTH_LABELS } from "@/lib/system-health";
 import type { ComponentState, RunHealth } from "@/lib/system-health";
-import { getSystemOverview } from "@/lib/system-status";
+import { getDataQuality, getSystemOverview } from "@/lib/system-status";
 import { cn } from "@/lib/utils";
 
 const timeFormat = new Intl.DateTimeFormat("tr-TR", {
@@ -70,7 +70,7 @@ function Stat({ label, value, hint }: { label: string; value: number | string; h
 async function SystemStatus() {
   await requireAdmin();
   await connection();
-  const overview = await getSystemOverview();
+  const [overview, quality] = await Promise.all([getSystemOverview(), getDataQuality()]);
   const overall = overallState(overview.components);
 
   return (
@@ -161,6 +161,51 @@ async function SystemStatus() {
             </p>
           )}
         </div>
+      </Section>
+
+      <Section title="Veri doğruluğu">
+        {quality.reported.length === 0 && quality.missing.length === 0 ? (
+          <p className="text-muted-foreground text-sm">
+            Açık hata bildirimi yok; yayındaki kampanyaların hepsi kaynakta görünüyor.
+          </p>
+        ) : (
+          <div className="space-y-3 text-sm">
+            {quality.reported.length > 0 && (
+              <div className="space-y-1">
+                <p className="font-medium">Kullanıcıların hata bildirdiği kampanyalar</p>
+                <ul className="space-y-0.5">
+                  {quality.reported.map((item) => (
+                    <li key={item.id}>
+                      <Link href={`/admin/kampanyalar/${item.id}`} className="underline">
+                        {item.title}
+                      </Link>{" "}
+                      <Badge tone="bad">{item.count} bildirim</Badge>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {quality.missing.length > 0 && (
+              <div className="space-y-1">
+                <p className="font-medium">
+                  Kaynakta artık görünmeyen yayındaki kampanyalar (banka kaldırmış olabilir)
+                </p>
+                <ul className="space-y-0.5">
+                  {quality.missing.map((item) => (
+                    <li key={item.id}>
+                      <Link href={`/admin/kampanyalar/${item.id}`} className="underline">
+                        {item.title}
+                      </Link>{" "}
+                      <span className="text-muted-foreground text-xs">
+                        son görülme {when(item.lastSeenAt)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
       </Section>
 
       <Section title="Son 24 saat ve kampanyalar">

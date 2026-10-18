@@ -9,7 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { rejectCampaignAction, saveCampaignAction } from "@/lib/admin-campaign-actions";
 import type { ActionResult } from "@/lib/admin-catalog-actions";
 import { JOIN_METHOD_LABELS, REWARD_LABELS, THRESHOLD_LABELS } from "@/lib/campaign-labels";
-import { emptyRule } from "@/lib/campaign-draft";
+import { campaignChecks, hasBlockingCheck } from "@/lib/campaign-checks";
+import { draftToInput, emptyRule } from "@/lib/campaign-draft";
+import { turkeyToday } from "@/lib/campaign-match";
 import type { CampaignDraft, RuleDraft } from "@/lib/campaign-draft";
 import { cn } from "@/lib/utils";
 
@@ -73,6 +75,11 @@ export function CampaignReviewForm({
       ...current,
       rules: current.rules.map((rule, i) => (i === index ? { ...rule, ...patch } : rule)),
     }));
+
+  // Onay öncesi kontroller formla birlikte güncellenir; hata varsa onay kapalı (ADR 0026).
+  const converted = draftToInput(draft);
+  const checks = converted.ok ? campaignChecks(converted.data, turkeyToday()) : [];
+  const blocked = hasBlockingCheck(checks);
 
   function run(action: () => Promise<ActionResult>) {
     setState({});
@@ -232,6 +239,41 @@ export function CampaignReviewForm({
           Kural ekle
         </Button>
 
+        {checks.length > 0 && (
+          <section
+            aria-label="Kontroller"
+            className="space-y-1 rounded-lg border p-3 text-sm"
+            data-testid="campaign-checks"
+          >
+            <p className="font-medium">Onaydan önce kontrol et</p>
+            <ul className="space-y-1">
+              {checks.map((check) => (
+                <li
+                  key={check.message}
+                  className={cn(
+                    "flex gap-2",
+                    check.level === "error"
+                      ? "text-destructive"
+                      : "text-amber-800 dark:text-amber-300",
+                  )}
+                >
+                  <span aria-hidden>{check.level === "error" ? "✕" : "!"}</span>
+                  <span>
+                    <span className="sr-only">
+                      {check.level === "error" ? "Hata: " : "Uyarı: "}
+                    </span>
+                    {check.message}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {blocked && (
+              <p className="text-muted-foreground text-xs">
+                Hatalar düzelmeden onaylanamaz; taslak olarak kaydedebilirsin.
+              </p>
+            )}
+          </section>
+        )}
         {state.error && (
           <p role="alert" className="text-destructive text-sm">
             {state.error}
@@ -246,7 +288,7 @@ export function CampaignReviewForm({
           <Button
             type="button"
             size="sm"
-            disabled={pending}
+            disabled={pending || blocked}
             onClick={() => run(() => saveCampaignAction(campaignId, "approve", draft))}
           >
             {status === "APPROVED" ? "Kaydet (yayında)" : "Kaydet ve onayla"}

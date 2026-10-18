@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { overallState, runHealth } from "./system-health";
+import { missingFromSource, overallState, runHealth } from "./system-health";
 import type { ComponentState } from "./system-health";
 
 const NOW = new Date("2026-10-18T12:00:00Z");
@@ -34,4 +34,13 @@ describe("runHealth", () => {
     [run("RUNNING", 0.5), "ok"],
     [run("RUNNING", 2), "stuck"],
   ] as const)("%o → %s", (last, expected) => expect(runHealth(last, NOW, 26)).toBe(expected));
+});
+
+describe("missingFromSource", () => {
+  it("son başarılı tarama, son görülmeden 36 saatten fazla sonraysa", () => {
+    expect(missingFromSource(hoursAgo(50), hoursAgo(2))).toBe(true);
+    expect(missingFromSource(hoursAgo(30), hoursAgo(2))).toBe(false);
+    expect(missingFromSource(hoursAgo(2), hoursAgo(2))).toBe(false);
+    expect(missingFromSource(hoursAgo(500), null)).toBe(false);
+  });
 });

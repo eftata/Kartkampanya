@@ -151,6 +151,12 @@ async function CampaignDetail({ params }: PageProps<"/kampanyalarim/[id]">) {
           {seenFormat.format(lastSeenAt)} tarihinde görüldü. Kesin koşullar için bankanın sayfası
           geçerlidir.
         </p>
+        <Link
+          href={`/geri-bildirim?kampanya=${campaign.id}&sayfa=${encodeURIComponent(`/kampanyalarim/${campaign.id}`)}`}
+          className="text-sm underline"
+        >
+          Bu kampanyada yanlış bir bilgi mi var? Bize bildir
+        </Link>
       </Section>
     </div>
   );

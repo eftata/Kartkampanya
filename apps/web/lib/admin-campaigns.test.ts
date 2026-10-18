@@ -4,7 +4,12 @@ import type { AdminCampaignInput } from "@kartplan/shared";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { getAuditLog } from "./admin-audit";
-import { getAdminCampaign, getReviewQueue, reviewCampaign } from "./admin-campaigns";
+import {
+  findSimilarCampaigns,
+  getAdminCampaign,
+  getReviewQueue,
+  reviewCampaign,
+} from "./admin-campaigns";
 import type { Actor } from "./admin-audit";
 
 // Gerçek veritabanı gerektirir: `docker compose up -d` + `pnpm db:deploy`.
@@ -190,6 +195,22 @@ describe.skipIf(!process.env.DATABASE_URL)("admin onay kuyruğu (veritabanı)", 
     });
   });
 
+  it("tutarsız kampanya taslak olarak kaydedilir ama onaylanamaz", async () => {
+    const broken = input({ joinDeadline: "2026-12-05" }); // bitişten sonra
+    expect(
+      await reviewCampaign(actor, ids2.campaign, { action: "approve", campaign: broken }, NOW),
+    ).toMatchObject({
+      ok: false,
+      code: "conflict",
+      error: "Onaylanamaz: Son katılım tarihi kampanya bitişinden sonra.",
+    });
+    expect(
+      await reviewCampaign(actor, ids2.campaign, { action: "save", campaign: broken }, NOW),
+    ).toEqual({ ok: true, data: { status: "DRAFT" } });
+    // Sonraki testler düzeltilmiş hali bekler.
+    await reviewCampaign(actor, ids2.campaign, { action: "save", campaign: input() }, NOW);
+  });
+
   it("onayla yayına alır, reddet gerekçesiyle kaydeder", async () => {
     expect(
       await reviewCampaign(actor, ids2.campaign, { action: "approve", campaign: input() }, NOW),
@@ -210,5 +231,31 @@ describe.skipIf(!process.env.DATABASE_URL)("admin onay kuyruğu (veritabanı)", 
 
     const approved = await getReviewQueue("APPROVED");
     expect(approved.campaigns.map((c) => c.id)).toContain(ids2.campaign);
+  });
+
+  it("benzer başlıklı, tarihi çakışan kampanyalar mükerrer adayı", async () => {
+    const twin = await prisma.campaign.create({
+      data: {
+        programId: ids.program,
+        title: "Markette 2.500 TL'ye 150 TL Puan!",
+        sourceUrl: `https://ornek-banka.test/${run}/ikiz`,
+        rawText: "SENTETİK",
+        rawHash: "x",
+        summary: [],
+        startsAt: new Date("2026-11-10T00:00:00Z"),
+        endsAt: new Date("2026-12-10T00:00:00Z"),
+        joinMethod: "APP",
+      },
+    });
+    const similar = await findSimilarCampaigns(twin);
+    expect(similar.map((c) => c.id)).toContain(ids2.campaign);
+    expect(similar[0]?.similarity).toBe(1);
+    // Tarihi çakışmayan aynı başlık aday değil.
+    const later = await findSimilarCampaigns({
+      ...twin,
+      startsAt: new Date("2027-01-01T00:00:00Z"),
+      endsAt: new Date("2027-01-31T00:00:00Z"),
+    });
+    expect(later.map((c) => c.id)).not.toContain(ids2.campaign);
   });
 });

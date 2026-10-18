@@ -30,4 +30,5 @@ taşır. Yanlış kampanya bildirimi (Faz 2'deki "bu kampanya yanlış") için d
 - Yanıtlar uygulama dışından (e-posta) verilir; uygulama içi konuşma yok.
 - Yeni geri bildirimde admin'e e-posta bildirimi yok; panodan takip edilir. Gerekirse günlük
   bildirim işine özet eklenir.
-- "DATA" türü kampanya kimliği taşımaz; Faz 2'de kampanya detayından bağlamlı bildirim eklenecek.
+- ~~"DATA" türü kampanya kimliği taşımaz~~ — ADR 0026 ile kampanya detayından bağlamlı bildirim
+  (`Feedback.campaignId`) eklendi.

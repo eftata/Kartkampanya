@@ -6,21 +6,30 @@ import { AuditList } from "@/components/admin/audit-list";
 import { CampaignReviewForm } from "@/components/admin/campaign-review-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAuditLog } from "@/lib/admin-audit";
-import { getAdminCampaign, getRuleOptions, ruleInput, toDay } from "@/lib/admin-campaigns";
+import {
+  findSimilarCampaigns,
+  getAdminCampaign,
+  getRuleOptions,
+  ruleInput,
+  toDay,
+} from "@/lib/admin-campaigns";
 import { CAMPAIGN_STATUS_LABELS } from "@/lib/admin-labels";
 import { requireAdmin } from "@/lib/auth/session";
 import { ruleToDraft } from "@/lib/campaign-draft";
+import { getOpenCampaignReports } from "@/lib/feedback";
 import type { CampaignDraft } from "@/lib/campaign-draft";
 
 async function CampaignReview({ params }: PageProps<"/admin/kampanyalar/[id]">) {
   await requireAdmin();
   const { id } = await params;
-  const [campaign, options, history] = await Promise.all([
+  const [campaign, options, history, reports] = await Promise.all([
     getAdminCampaign(id),
     getRuleOptions(),
     getAuditLog({ entityType: "Campaign", entityId: id }, 10),
+    getOpenCampaignReports(id),
   ]);
   if (!campaign) notFound();
+  const similar = await findSimilarCampaigns(campaign);
 
   const draft: CampaignDraft = {
     title: campaign.title,
@@ -58,6 +67,50 @@ async function CampaignReview({ params }: PageProps<"/admin/kampanyalar/[id]">) 
           </a>
         </p>
       </div>
+
+      {reports.length > 0 && (
+        <section
+          aria-label="Hata bildirimleri"
+          className="space-y-2 rounded-lg border border-red-500/40 bg-red-500/5 p-3 text-sm"
+        >
+          <p className="font-medium">
+            Kullanıcılar bu kampanyada {reports.length} hata bildirdi (açık)
+          </p>
+          <ul className="list-disc space-y-1 pl-5">
+            {reports.map((report) => (
+              <li key={report.id} className="whitespace-pre-wrap">
+                {report.message}
+              </li>
+            ))}
+          </ul>
+          <Link href="/admin/geri-bildirim" className="underline">
+            Geri bildirimlerde aç
+          </Link>
+        </section>
+      )}
+      {similar.length > 0 && (
+        <section
+          aria-label="Benzer kampanyalar"
+          className="space-y-1 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm"
+        >
+          <p className="font-medium">
+            Mükerrer olabilir: aynı programda, tarihi çakışan benzer başlıklar
+          </p>
+          <ul className="space-y-0.5">
+            {similar.map((other) => (
+              <li key={other.id}>
+                <Link href={`/admin/kampanyalar/${other.id}`} className="underline">
+                  {other.title}
+                </Link>{" "}
+                <span className="text-muted-foreground">
+                  · {CAMPAIGN_STATUS_LABELS[other.status]} · {toDay(other.startsAt)} –{" "}
+                  {toDay(other.endsAt)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card className="lg:sticky lg:top-4">

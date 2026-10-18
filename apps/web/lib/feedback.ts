@@ -21,6 +21,7 @@ const select = {
   page: true,
   status: true,
   createdAt: true,
+  campaign: { select: { id: true, title: true } },
 } as const;
 
 type Row = {
@@ -29,6 +30,7 @@ type Row = {
   rating: number | null;
   message: string;
   page: string | null;
+  campaign: { id: string; title: string } | null;
   status: FeedbackStatus;
   createdAt: Date;
 };
@@ -39,7 +41,15 @@ export async function createFeedback(
   userId: string,
   input: FeedbackInput,
 ): Promise<MutationResult<FeedbackDto>> {
-  const row = await getPrisma().feedback.create({ data: { userId, ...input }, select });
+  const prisma = getPrisma();
+  if (input.campaignId) {
+    const campaign = await prisma.campaign.findFirst({
+      where: { id: input.campaignId, status: { in: ["APPROVED", "EXPIRED"] } },
+      select: { id: true },
+    });
+    if (!campaign) return { ok: false, code: "not_found", error: "Kampanya bulunamadı." };
+  }
+  const row = await prisma.feedback.create({ data: { userId, ...input }, select });
   track(userId, "feedback_sent", { kind: input.kind, rated: input.rating !== null });
   return { ok: true, data: toDto(row) };
 }
@@ -53,6 +63,23 @@ export async function getMyFeedback(userId: string, take = 20): Promise<Feedback
     select,
   });
   return rows.map(toDto);
+}
+
+/** Hata bildirilebilecek kampanya (onaylı ya da süresi dolmuş); yoksa null. */
+export async function getReportableCampaign(id: string) {
+  return getPrisma().campaign.findFirst({
+    where: { id, status: { in: ["APPROVED", "EXPIRED"] } },
+    select: { id: true, title: true },
+  });
+}
+
+/** Kampanyanın açık (yeni ya da okunmuş, tamamlanmamış) hata bildirimleri. */
+export async function getOpenCampaignReports(campaignId: string) {
+  return getPrisma().feedback.findMany({
+    where: { campaignId, status: { in: ["NEW", "READ"] } },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, message: true, status: true, createdAt: true },
+  });
 }
 
 /** Admin listesi: duruma göre, yeniden eskiye; yanıt verebilmek için gönderenin e-postası. */
