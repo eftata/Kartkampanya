@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseFilters } from "./campaign-filters";
+import { parseFilters, parsePublicFilters } from "./campaign-filters";
 
 describe("parseFilters", () => {
   it("varsayılan: filtre yok, bitişe göre", () =>
@@ -18,5 +18,19 @@ describe("parseFilters", () => {
     expect(parseFilters({ kart: "", tur: "hediye", sirala: ["kazanc", "bitis"] })).toEqual({
       query: { sort: "gain" },
       values: { kart: "", kategori: "", tur: "", sirala: "kazanc" },
+    }));
+});
+
+describe("parsePublicFilters", () => {
+  it("geçerli slug'ları alır, ilk değeri kullanır", () =>
+    expect(parsePublicFilters({ program: ["bonus", "world"], kategori: " market " })).toEqual({
+      program: "bonus",
+      kategori: "market",
+    }));
+
+  it("bozuk değerleri yok sayar", () =>
+    expect(parsePublicFilters({ program: "Bonus Kart", kategori: "<script>" })).toEqual({
+      program: "",
+      kategori: "",
     }));
 });

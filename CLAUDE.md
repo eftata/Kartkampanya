@@ -120,7 +120,8 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   build'de veri okuyorsa yalnızca CI'da kırılır. CI koşulunu denemek için `.env`'siz temiz bir
   klonda `pnpm build`.
 - Turbo **strict env** modunda: build sırasında okunan her ortam değişkeni `turbo.json` →
-  `tasks.build.env` listesine eklenmeli (yoksa build onu görmez). Şu an: `AUTH_GOOGLE_ID/SECRET`.
+  `tasks.build.env` listesine eklenmeli (yoksa build onu görmez). Şu an: `AUTH_GOOGLE_ID/SECRET`,
+  `APP_URL` (kök layout `metadataBase`).
 - Staging: web → Vercel (`apps/web`), Postgres + motor → Railway. Migration'lar Vercel build
   komutunda `pnpm db:deploy` ile uygulanır.
 
@@ -173,6 +174,19 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   (`lib/campaign-draft.ts` → `draftToInput`), şemalar `packages/shared/src/campaigns.ts`
   (kurallar veri hattının pydantic modeliyle aynı tutulmalı). İşlem kaydı yardımcıları
   `lib/admin-audit.ts`. e2e'de taslak kampanya: `e2e/helpers.ts → createDraftCampaign`.
+
+## Vitrin ve SEO — ayrıntı: docs/adr/0020-public-seo.md
+
+- Herkese açık veri `lib/public-campaigns.ts` (kişisel veri yok; liste onaylı + bitmemiş + katılım
+  süresi geçmemiş, detayda süresi dolan da açılır ve `noindex`). Adres `lib/campaign-slug.ts →
+campaignPath` (`/kampanyalar/<slug>-<id>`, id cuid → son tireden sonrası); farklı slug kanoniğe
+  yönlenir. Filtreler `parsePublicFilters` (`?program=&kategori=` slug).
+- `app/sitemap.ts`, `app/robots.ts`: `await connection()` ile istek anında (CI build'inde DB yok).
+  Kök adres `lib/site.ts → siteUrl()` (`APP_URL`); kapalı yollar `NON_INDEXED_PATHS` — yeni kişisel
+  rota eklenince oraya da ekle. Herkese açık sayfa "bugün"ü kullanıyorsa önce `connection()`.
+- `cacheComponents` ile statik kabuk önce gider: `notFound()`/`permanentRedirect()` durum kodu 200
+  kalır (Next `noindex` / 0 sn meta refresh ekler).
+- e2e'de herkese açık onaylı kampanya 2099 tarihli olsun (paralel plan testlerine girmesin).
 
 ## KVKK — ayrıntı: docs/adr/0019-kvkk.md
 

@@ -145,7 +145,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 - [x] E-posta: katılım hatırlatma (kampanya başlangıcında), son 3 gün uyarısı, haftalık plan özeti — günlük iş `GET /api/cron/notifications` (Vercel Cron, `CRON_SECRET`), `NotificationLog` ile tek sefer, kullanıcı başına tür başına toplu e-posta; ADR 0018
 - [x] Bildirim tercihleri ve tek tıkla abonelikten çıkma — Profilim → "E-posta bildirimleri" (`/profil#bildirimler`), API `GET/PUT /api/me/notifications`; tek tıkla çıkma: imzalı bağlantı, `/abonelik` onay sayfası, `List-Unsubscribe-Post`; ADR 0018
 - [x] KVKK: aydınlatma metni, açık rıza kaydı (versiyonlu), veri indirme, hesap silme — `/aydinlatma` (taslak, hukuki inceleme bekliyor), `/onay` kapısı (aydınlatma + yurt dışı aktarım açık rızası zorunlu, pazarlama ayrı), Profilim → "Verilerin ve gizlilik", `GET /api/me/export`, `DELETE /api/me`, 30 gün sonra kalıcı silme (`/api/cron/purge-accounts`); ADR 0019
-- [ ] Landing page + herkese açık kampanya sayfaları (SEO), sitemap
+- [x] Landing page + herkese açık kampanya sayfaları (SEO), sitemap — landing: "Nasıl çalışır?", güvenceler, çağrı; `/kampanyalar` (onaylı ve süresi geçmemiş kampanyalar, program ve kategori filtresi URL'de), detay `/kampanyalar/<başlık-slug>-<id>` (kanonik adres, eski başlık yönlenir, süresi dolan `noindex`, taslak/reddedilen 404, Open Graph), `sitemap.xml` + `robots.txt` (kişisel sayfalar, admin ve API kapalı); kök adres `APP_URL`; ADR 0020
 - [ ] Rate limiting, güvenlik başlıkları, hata takibi (Sentry), ürün analitiği (PostHog)
 
 **Kabul:** güvenlik ve KVKK kontrol listesi (aşağıda) tamamen işaretli.

@@ -129,7 +129,9 @@ e-postalar spama düşer. Gerekenler: host, port (465 → TLS), kullanıcı, şi
    | `APP_URL`                                     | `https://<staging-alan-adı>`     |
 
    `AUTH_URL` gerekmez: Auth.js Vercel'de adresi istekten alır (`trustHost`).
-   Google değişkenlerini sonradan eklersen **yeniden deploy et**: buton build anında belirlenir.
+   Google değişkenlerini ve `APP_URL`'i sonradan eklersen ya da değiştirirsen **yeniden deploy et**:
+   Google butonu ve sayfa metadata'sının kök adresi (`metadataBase`; kanonik/OG bağlantıları)
+   build anında belirlenir. Sitemap ve robots `APP_URL`'i istek anında okur.
 
 4. Deploy et → `https://<proje>.vercel.app/api/health` → `{"status":"ok"}`.
 5. **Zamanlanmış işler:** `apps/web/vercel.json` iki günlük cron tanımlar: bildirimler

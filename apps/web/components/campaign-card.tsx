@@ -14,7 +14,7 @@ const dayFormat = new Intl.DateTimeFormat("tr-TR", {
 });
 export const formatDay = (day: string) => dayFormat.format(new Date(`${day}T00:00:00Z`));
 
-function Tag({
+export function Tag({
   tone,
   children,
 }: {

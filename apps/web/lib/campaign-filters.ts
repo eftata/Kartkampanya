@@ -33,3 +33,19 @@ export function parseFilters(params: Record<string, string | string[] | undefine
     values: { kart, kategori, tur, sirala },
   };
 }
+
+/** Herkese açık `/kampanyalar` filtreleri: program ve ana kategori slug'ı. */
+export type PublicFilterParams = { program: string; kategori: string };
+
+const SLUG = /^[a-z0-9-]{1,60}$/;
+
+export function parsePublicFilters(
+  params: Record<string, string | string[] | undefined>,
+): PublicFilterParams {
+  const program = first(params.program);
+  const kategori = first(params.kategori);
+  return {
+    program: SLUG.test(program) ? program : "",
+    kategori: SLUG.test(kategori) ? kategori : "",
+  };
+}
