@@ -37,6 +37,13 @@ CI (`.github/workflows/ci.yml`) her dala push'ta ve fork'lardan gelen PR'larda k
    adresle bağlanır.
 3. **Settings → Backups** → günlük yedeği aç. Geri yüklemeyi bir kez dene (güvenlik listesinde var).
 
+### 1b. Railway: Redis (istek sınırı)
+
+Aynı projede **New → Database → Redis**. Redis servisi → **Variables** → `REDIS_PUBLIC_URL`
+değerini Vercel'de `REDIS_URL` olarak tanımla. Tanımlanmazsa sayaçlar her sunucu örneğinin
+belleğinde tutulur (Vercel'de örnekler arasında paylaşılmaz, sınır gevşer); Redis'e ulaşılamazsa
+istekler geçer (ADR 0021).
+
 ## 2. Railway: motor (`services/engine`)
 
 1. Aynı projede **New → GitHub Repo** → bu repo.
@@ -127,11 +134,13 @@ e-postalar spama düşer. Gerekenler: host, port (465 → TLS), kullanıcı, şi
    | `SEED_ADMIN_EMAIL`                            | (opsiyonel) kendi e-postan       |
    | `CRON_SECRET`                                 | `openssl rand -hex 32`           |
    | `APP_URL`                                     | `https://<staging-alan-adı>`     |
+   | `REDIS_URL`                                   | Railway `REDIS_PUBLIC_URL`       |
 
    `AUTH_URL` gerekmez: Auth.js Vercel'de adresi istekten alır (`trustHost`).
    Google değişkenlerini ve `APP_URL`'i sonradan eklersen ya da değiştirirsen **yeniden deploy et**:
    Google butonu ve sayfa metadata'sının kök adresi (`metadataBase`; kanonik/OG bağlantıları)
-   build anında belirlenir. Sitemap ve robots `APP_URL`'i istek anında okur.
+   build anında belirlenir. Sitemap ve robots `APP_URL`'i istek anında okur. Güvenlik başlıkları da
+   build'de belirlenir (`APP_URL` `http://` ile başlıyorsa `upgrade-insecure-requests` eklenmez).
 
 4. Deploy et → `https://<proje>.vercel.app/api/health` → `{"status":"ok"}`.
 5. **Zamanlanmış işler:** `apps/web/vercel.json` iki günlük cron tanımlar: bildirimler

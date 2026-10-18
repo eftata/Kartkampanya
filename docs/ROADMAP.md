@@ -146,7 +146,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 - [x] Bildirim tercihleri ve tek tıkla abonelikten çıkma — Profilim → "E-posta bildirimleri" (`/profil#bildirimler`), API `GET/PUT /api/me/notifications`; tek tıkla çıkma: imzalı bağlantı, `/abonelik` onay sayfası, `List-Unsubscribe-Post`; ADR 0018
 - [x] KVKK: aydınlatma metni, açık rıza kaydı (versiyonlu), veri indirme, hesap silme — `/aydinlatma` (taslak, hukuki inceleme bekliyor), `/onay` kapısı (aydınlatma + yurt dışı aktarım açık rızası zorunlu, pazarlama ayrı), Profilim → "Verilerin ve gizlilik", `GET /api/me/export`, `DELETE /api/me`, 30 gün sonra kalıcı silme (`/api/cron/purge-accounts`); ADR 0019
 - [x] Landing page + herkese açık kampanya sayfaları (SEO), sitemap — landing: "Nasıl çalışır?", güvenceler, çağrı; `/kampanyalar` (onaylı ve süresi geçmemiş kampanyalar, program ve kategori filtresi URL'de), detay `/kampanyalar/<başlık-slug>-<id>` (kanonik adres, eski başlık yönlenir, süresi dolan `noindex`, taslak/reddedilen 404, Open Graph), `sitemap.xml` + `robots.txt` (kişisel sayfalar, admin ve API kapalı); kök adres `APP_URL`; ADR 0020
-- [ ] Rate limiting, güvenlik başlıkları, hata takibi (Sentry), ürün analitiği (PostHog)
+- [ ] Rate limiting, güvenlik başlıkları, hata takibi (Sentry), ürün analitiği (PostHog) — **rate limiting ve başlıklar tamam**: proxy'de API ve yazma istekleri oturum başına 120/dk + IP başına 600/dk (429 + `Retry-After`), giriş bağlantısı e-posta başına 5/saat ve IP başına 20/15 dk, planı yeniden hesaplatma 10/saat; sayaçlar Redis'te (`REDIS_URL`, yoksa bellek); CSP (nonce'suz), HSTS, `X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, COOP; ADR 0021. Sentry ve PostHog bekliyor
 
 **Kabul:** güvenlik ve KVKK kontrol listesi (aşağıda) tamamen işaretli.
 
@@ -700,9 +700,9 @@ Bir görev ancak aşağıdaki "tamamlandı" tanımını karşılıyorsa kapanır
 - [ ] Kart numarası, CVV, son kullanma tarihi hiçbir formda yok (input doğrulaması 16 haneli sayıları reddeder)
 - [ ] Gizli anahtarlar yalnızca ortam değişkenlerinde; repoda gizli tarama (gitleaks) CI adımı
 - [ ] Tüm API girdileri zod ile doğrulanıyor; Prisma dışında ham SQL yok
-- [ ] Rate limiting (giriş, magic link, plan hesaplama)
+- [x] Rate limiting (giriş, magic link, plan hesaplama) — ADR 0021
 - [x] Admin rotaları rol kontrolü + işlem kaydı (kim neyi onayladı) — katalog ve kampanya onay/ret/düzenleme işlemleri (`entityType = "Campaign"`)
-- [ ] Güvenlik başlıkları (CSP, HSTS), HTTPS zorunlu
+- [x] Güvenlik başlıkları (CSP, HSTS), HTTPS zorunlu — `lib/security-headers.ts`; Vercel http→https yönlendirir, HSTS + `upgrade-insecure-requests`; ADR 0021
 - [ ] Bağımlılık taraması (Dependabot / Renovate)
 - [ ] Günlük veritabanı yedeği + geri yükleme bir kez denendi
 

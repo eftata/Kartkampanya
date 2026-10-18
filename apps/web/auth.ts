@@ -7,6 +7,7 @@ import Google from "next-auth/providers/google";
 import Nodemailer from "next-auth/providers/nodemailer";
 
 import { sendMagicLink, smtpOptions } from "@/lib/email/magic-link";
+import { rateLimit } from "@/lib/rate-limit";
 
 declare module "next-auth" {
   interface Session {
@@ -27,8 +28,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth((): NextAuthConfig =
       server: smtpOptions(),
       from: process.env.EMAIL_FROM ?? "KartPlan <no-reply@kartplan.local>",
       maxAge: 24 * 60 * 60,
-      sendVerificationRequest: ({ identifier, url, provider }) =>
-        sendMagicLink({ identifier, url, from: provider.from ?? "" }),
+      sendVerificationRequest: async ({ identifier, url, provider }) => {
+        // `/api/auth`'a doğrudan istek atılsa da aynı adrese sınırsız e-posta gitmesin (ADR 0021).
+        if (!(await rateLimit("magicLinkSend", identifier.toLowerCase())).ok) {
+          throw new Error("Giriş bağlantısı sınırı aşıldı.");
+        }
+        await sendMagicLink({ identifier, url, from: provider.from ?? "" });
+      },
     }),
   ];
   if (isGoogleEnabled()) {

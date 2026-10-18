@@ -8,6 +8,16 @@ export const uniqueEmail = (prefix = "e2e") =>
   `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@kartplan.test`;
 
 /**
+ * Rastgele test IP'si (198.18.0.0/15, kıyaslama bloğu). Sunucu istemci IP'sini
+ * `x-forwarded-for`'dan okur; testler aynı makineden geldiği için IP başına sınırlar (ADR 0021)
+ * birbirini etkilemesin.
+ */
+export const randomIp = () => {
+  const octet = () => Math.floor(Math.random() * 254) + 1;
+  return `198.${18 + Math.floor(Math.random() * 2)}.${octet()}.${octet()}`;
+};
+
+/**
  * Yeni kullanıcı kaydeder, oturum açar, KVKK onayını verir ve onboarding'e varmayı bekler; giriş
  * bağlantısını döndürür. `consent: false` → onay ekranında (`/onay`) durur.
  */
@@ -16,6 +26,7 @@ export async function signUp(
   email = uniqueEmail(),
   { consent = true }: { consent?: boolean } = {},
 ): Promise<string> {
+  await page.context().setExtraHTTPHeaders({ "x-forwarded-for": randomIp() });
   await page.goto("/giris");
   await page.getByLabel("E-posta").fill(email);
   await page.getByRole("button", { name: "Giriş bağlantısı gönder" }).click();

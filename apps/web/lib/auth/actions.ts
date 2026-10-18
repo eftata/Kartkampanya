@@ -1,11 +1,17 @@
 "use server";
 
 import { AuthError } from "next-auth";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { signIn } from "@/auth";
-import { ACCESS_DENIED_MESSAGE, SIGNED_IN_REDIRECT } from "@/lib/auth/routes";
+import {
+  ACCESS_DENIED_MESSAGE,
+  MAGIC_LINK_LIMIT_MESSAGE,
+  SIGNED_IN_REDIRECT,
+} from "@/lib/auth/routes";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 const EmailSchema = z.email().max(254);
 
@@ -19,6 +25,14 @@ export async function signInWithEmail(
   const parsed = EmailSchema.safeParse(email);
   if (!parsed.success) {
     return { error: "Geçerli bir e-posta adresi gir.", email };
+  }
+  // Aynı adrese ya da aynı yerden çok sayıda bağlantı isteği: e-posta bombardımanı (ADR 0021).
+  const [byEmail, byIp] = await Promise.all([
+    rateLimit("magicLinkEmail", parsed.data.toLowerCase()),
+    rateLimit("magicLinkIp", clientIp(await headers())),
+  ]);
+  if (!byEmail.ok || !byIp.ok) {
+    return { error: MAGIC_LINK_LIMIT_MESSAGE, email };
   }
   try {
     // redirect: false → Auth.js kendi /api/auth/verify-request sayfasına yönlendirmez; aşağıda biz yönlendiririz.

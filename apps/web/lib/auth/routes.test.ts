@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isProtectedPath } from "./routes";
+import { isProtectedPath, isRateLimitedRequest } from "./routes";
 
 describe("isProtectedPath", () => {
   it.each([
@@ -23,4 +23,22 @@ describe("isProtectedPath", () => {
     "/api/health",
     "/aydinlatma",
   ])("%s herkese açıktır", (path) => expect(isProtectedPath(path)).toBe(false));
+});
+
+describe("isRateLimitedRequest", () => {
+  it.each([
+    ["GET", "/api/me/plan"],
+    ["POST", "/api/unsubscribe"],
+    ["POST", "/api/auth/signin/nodemailer"],
+    ["POST", "/giris"], // Server Action
+    ["DELETE", "/api/me"],
+  ])("%s %s sınırlanır", (method, path) => expect(isRateLimitedRequest(method, path)).toBe(true));
+
+  it.each([
+    ["GET", "/"],
+    ["GET", "/kampanyalar"],
+    ["HEAD", "/plan"],
+    ["GET", "/api/cron/notifications"],
+    ["GET", "/api/health"],
+  ])("%s %s sınırlanmaz", (method, path) => expect(isRateLimitedRequest(method, path)).toBe(false));
 });

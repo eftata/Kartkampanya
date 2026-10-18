@@ -121,7 +121,7 @@ pnpm engine:check                     # ruff check + ruff format --check + mypy 
   klonda `pnpm build`.
 - Turbo **strict env** modunda: build sırasında okunan her ortam değişkeni `turbo.json` →
   `tasks.build.env` listesine eklenmeli (yoksa build onu görmez). Şu an: `AUTH_GOOGLE_ID/SECRET`,
-  `APP_URL` (kök layout `metadataBase`).
+  `APP_URL` (kök layout `metadataBase`, güvenlik başlıkları).
 - Staging: web → Vercel (`apps/web`), Postgres + motor → Railway. Migration'lar Vercel build
   komutunda `pnpm db:deploy` ile uygulanır.
 
@@ -187,6 +187,19 @@ campaignPath` (`/kampanyalar/<slug>-<id>`, id cuid → son tireden sonrası); fa
 - `cacheComponents` ile statik kabuk önce gider: `notFound()`/`permanentRedirect()` durum kodu 200
   kalır (Next `noindex` / 0 sn meta refresh ekler).
 - e2e'de herkese açık onaylı kampanya 2099 tarihli olsun (paralel plan testlerine girmesin).
+
+## Güvenlik — ayrıntı: docs/adr/0021-rate-limit-headers.md
+
+- İstek sınırı `lib/rate-limit.ts` (`rateLimit(ad, kimlik)`, sınırlar `RATE_LIMITS`; Redis
+  `REDIS_URL`, yoksa bellek; Redis'e ulaşılamazsa geçer). proxy tüm API'yi ve sayfalara yazma
+  isteklerini (Server Action) oturum + IP başına sınırlar (`isRateLimitedRequest`; cron ve health
+  hariç). Pahalı/kötüye kullanılabilir işlemler ayrıca kendi sınırını çağırır (giriş bağlantısı,
+  plan yeniden hesaplama) ve kullanıcıya Türkçe mesaj döner. IP `clientIp()` (`x-forwarded-for`).
+- e2e testleri tek makineden gelir: `signUp` her bağlamda rastgele `x-forwarded-for` (`randomIp`)
+  verir; IP sınırına takılabilecek yeni testlerde de kullan.
+- Başlıklar `lib/security-headers.ts` → `next.config.ts headers()` (build anında). CSP nonce'suz
+  (`'unsafe-inline'` betik; statik kabuklar için). Yeni dış kaynak (Sentry, PostHog, CDN) →
+  ilgili CSP yönergesine ekle; e2e `security.spec.ts` CSP ihlali olmadığını denetler.
 
 ## KVKK — ayrıntı: docs/adr/0019-kvkk.md
 
