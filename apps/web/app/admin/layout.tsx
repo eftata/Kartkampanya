@@ -13,6 +13,7 @@ const items = [
   { href: "/admin/kampanyalar", label: "Onay kuyruğu" },
   { href: "/admin/katalog", label: "Katalog" },
   { href: "/admin/geri-bildirim", label: "Geri bildirim" },
+  { href: "/admin/huni", label: "Huni" },
   { href: "/admin/durum", label: "Sistem durumu" },
 ];
 

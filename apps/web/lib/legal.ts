@@ -17,7 +17,7 @@ export const CONSENT_KINDS = {
 } as const;
 
 export const LEGAL_VERSIONS = {
-  aydinlatma: "2026-10-18.2",
+  aydinlatma: "2026-10-18.3",
   acikRiza: "2026-10-18",
   pazarlama: "2026-10-17",
 } as const;
@@ -42,6 +42,7 @@ export const AYDINLATMA_METNI: LegalSection[] = [
     paragraphs: [
       "Kimlik ve iletişim: e-posta adresi; Google ile girişte ad ve profil fotoğrafı.",
       "Hizmet verileri: seçtiğin kart ürünleri (banka, program, kart adı), isteğe bağlı kart limiti ve hesap kesim günü, kartlara verdiğin takma adlar, kategori başına aylık harcama tutarları ve tercih ettiğin markalar, kampanyalara katıldığına dair işaretlerin, hesaplanan aylık planların, bildirim tercihlerin, gönderilen bildirimlerin kaydı ve bize gönderdiğin geri bildirim mesajları.",
+      "Kullanım günleri: uygulamayı hangi günlerde kullandığın (saat, sayfa ya da işlem değil), ilk kart ekleme ve planı ilk görme zamanı; 180 gün saklanır.",
       "İşlem güvenliği: oturum kayıtları, sunucu günlükleri ve hata kayıtları (e-posta, ad ve çerez içermez).",
       "Kullanım istatistikleri: ziyaret edilen sayfalar (adres parametreleri olmadan) ve hesabına bağlı ürün adımları (kayıt, kart ekleme, harcama profili, plan görüntüleme, kampanyaya katılım). Bu adımlar e-postan ya da adınla değil, yalnızca bizim çözebileceğimiz takma bir kimlikle kaydedilir; tarayıcına analitik çerezi yazılmaz.",
       "Kart numarası, CVV, son kullanma tarihi, şifre ya da banka hesap bilgisi hiçbir koşulda alınmaz ve saklanmaz.",
@@ -52,7 +53,7 @@ export const AYDINLATMA_METNI: LegalSection[] = [
     paragraphs: [
       "Hesabının oluşturulması, girişin sağlanması, geri bildirimlerinin değerlendirilip sana dönülmesi, kartlarına ve harcama alanlarına uyan kampanyaların listelenmesi, aylık harcama planının hesaplanması ve hizmet bildirimlerinin (katılım hatırlatma, kampanya bitiş uyarısı, haftalık özet) gönderilmesi: sözleşmenin kurulması ve ifası (KVKK m. 5/2-c).",
       "Hizmetin güvenliği, kötüye kullanımın önlenmesi (istek sınırlama) ve hataların giderilmesi: meşru menfaat (KVKK m. 5/2-f) ve hukuki yükümlülük (m. 5/2-ç).",
-      "Hizmetin hangi adımlarının kullanıldığını ölçüp geliştirmek (kullanım istatistikleri): meşru menfaat (KVKK m. 5/2-f).",
+      "Hizmetin hangi adımlarının kullanıldığını ve kullanıcıların geri dönüp dönmediğini ölçüp geliştirmek (kullanım istatistikleri, kullanım günleri): meşru menfaat (KVKK m. 5/2-f).",
       "Pazarlama iletileri: yalnızca ayrıca izin verirsen (açık rıza, m. 5/1); izin vermemen hizmeti kullanmana engel değildir.",
     ],
   },

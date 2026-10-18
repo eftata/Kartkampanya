@@ -45,7 +45,7 @@ test("admin sistem durumu panosu: bileşenler, zamanlanmış işler ve sayılar"
   );
   const jobs = page.getByRole("region", { name: "Zamanlanmış işler" });
   await expect(
-    jobs.getByRole("row").filter({ hasText: "Silinen hesapların temizliği" }),
+    jobs.getByRole("row").filter({ hasText: "Silinen hesaplar ve eski kullanım günleri" }),
   ).toContainText("Zamanında");
   await expect(page.getByRole("group", { name: "Onay bekleyen" })).toBeVisible();
   await expect(

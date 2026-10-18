@@ -2,6 +2,7 @@ import "server-only";
 
 import type { z } from "zod";
 
+import { noteActivity } from "@/lib/activity";
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasCurrentConsent } from "@/lib/consent";
 import type { CurrentUser } from "@/lib/auth/session";
@@ -21,6 +22,7 @@ export async function withUser(
   if (consent && !(await hasCurrentConsent(user.id))) {
     return jsonError(403, "Önce aydınlatma metnini ve açık rıza metnini onayla.");
   }
+  if (consent) noteActivity(user.id);
   return handler(user);
 }
 

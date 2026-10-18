@@ -231,6 +231,13 @@ campaignPath` (`/kampanyalar/<slug>-<id>`, id cuid → son tireden sonrası); fa
 - Kullanıcıya ait yeni bir tablo eklenince: `onDelete: Cascade`, `exportUserData`'ya ekle,
   aydınlatma metnini güncelle ve sürümünü artır.
 
+## Huni — ayrıntı: docs/adr/0025-funnel.md
+
+- Tanımlar saf `lib/funnel.ts`, veri `lib/funnel-data.ts`, sayfa `/admin/huni`. Kullanım günleri
+  `UserActivityDay` (`lib/activity.ts → noteActivity`; `requireUser`/`withUser` çağırır, `after`
+  ile, 180 gün), kilometre taşları `markFirstCard` / `markPlanViewed` (yalnızca boşken).
+- Huniye yeni adım → `User`'a zaman alanı + `computeFunnel` + veri kopyası + aydınlatma metni.
+
 ## KVKK — ayrıntı: docs/adr/0019-kvkk.md
 
 - Metinler ve sürümler `apps/web/lib/legal.ts` (taslak; metin değişince sürümü artır → herkes yeniden

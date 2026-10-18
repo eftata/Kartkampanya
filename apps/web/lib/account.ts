@@ -45,6 +45,8 @@ export async function exportUserData(userId: string, now = new Date()) {
       image: true,
       role: true,
       createdAt: true,
+      firstCardAt: true,
+      firstPlanViewAt: true,
       notifyPrefs: true,
       accounts: { select: { provider: true, type: true } },
       sessions: { select: { expires: true } },
@@ -93,6 +95,7 @@ export async function exportUserData(userId: string, now = new Date()) {
         orderBy: { sentAt: "asc" },
         select: { kind: true, key: true, sentAt: true },
       },
+      activityDays: { orderBy: { day: "asc" }, select: { day: true } },
       feedback: {
         orderBy: { createdAt: "asc" },
         select: {
@@ -133,6 +136,8 @@ export async function exportUserData(userId: string, now = new Date()) {
       loginMethods: user.accounts.map((a) => a.provider),
       activeSessions: user.sessions.length,
       notificationPreferences: user.notifyPrefs,
+      firstCardAddedAt: user.firstCardAt,
+      firstPlanViewedAt: user.firstPlanViewAt,
     },
     consents: user.consents,
     cards: user.cards.map((card) => ({
@@ -160,6 +165,7 @@ export async function exportUserData(userId: string, now = new Date()) {
     monthlyPlans: user.plans,
     sentNotifications: user.notifications,
     feedback: user.feedback,
+    activeDays: user.activityDays.map((item) => item.day),
     adminActions: user.adminAuditLogs,
   };
 }

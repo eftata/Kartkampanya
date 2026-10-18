@@ -9,7 +9,7 @@ import { scrubText } from "@/lib/telemetry/scrub";
 /** Web'deki zamanlanmış işler ve en geç ne kadar arayla başarıyla çalışmaları gerektiği. */
 export const JOBS = {
   notifications: { label: "Bildirim e-postaları", maxAgeHours: 26 },
-  "purge-accounts": { label: "Silinen hesapların temizliği", maxAgeHours: 26 },
+  "purge-accounts": { label: "Silinen hesaplar ve eski kullanım günleri", maxAgeHours: 26 },
 } as const;
 export type JobName = keyof typeof JOBS;
 

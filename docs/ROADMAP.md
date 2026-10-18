@@ -154,7 +154,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 
 - [ ] Production ortamı, yedekleme, izleme panosu — **kod tarafı tamam**: herkese açık bileşen durumu `GET /api/status` (veritabanı, Redis, motor; çalışamıyorsa 503), zamanlanmış iş kaydı `JobRun` (bildirim, hesap temizliği; Sentry'ye hata), admin "Sistem durumu" panosu `/admin/durum` (bileşenler, işler + veri hattı kaynakları ve gecikme, onay kuyruğu, kampanya/kullanıcı/e-posta/plan sayıları); production kurulum, yedek ve geri yükleme tatbikatı, uyarılar `docs/operations.md`; ADR 0023. **Bekleyen (hesap gerektirir):** production projeleri ve alan adı, yedek tatbikatı, uptime izleyici
 - [ ] 20–50 davetli kullanıcı (Genç Finans Kulüp, çevre) ve geri bildirim formu — **geri bildirim formu tamam**: üst menüde "Geri bildirim" (açıldığı sayfayı iletir) → `/geri-bildirim` (konu: hata / öneri / yanlış kampanya-kart bilgisi / diğer, isteğe bağlı 1–5 puan, mesaj; kart numarası reddedilir; kullanıcı başına saatte 10), "Gönderdiklerin" listesi durumla; API `GET/POST /api/me/feedback`; admin gelen kutusu `/admin/geri-bildirim` (yeni / okundu / tamamlandı, e-postayla yanıt, işlem kaydı); veri kopyasında yer alır, hesapla silinir; ADR 0024. **Davet sistemi ertelendi** (2026-10-18 kararı): kayıt şimdilik herkese açık, davetliler bağlantıyla yönlendirilir; kapalı kayıt (davetli e-posta listesi / davet kodu) gerekirse sonra eklenecek
-- [ ] Huni ölçümü: kayıt → kart girdi → planı gördü → 2. hafta geri döndü
+- [x] Huni ölçümü: kayıt → kart girdi → planı gördü → 2. hafta geri döndü — admin `/admin/huni` (toplam + kayıt haftasına göre kohortlar; kayıt = ilk açık rıza, 2. hafta = kayıttan sonraki 7–13. günlerden birinde kullanım, 14 gün dolmadan "henüz ölçülemez"); kaynak kendi veritabanımız: `User.firstCardAt`/`firstPlanViewAt`, kullanım günleri `UserActivityDay` (180 gün saklanır, veri kopyasında); PostHog'da aynı adımlar takma adlı olay olarak; ADR 0025
 - [ ] Hata düzeltme ve kampanya veri doğruluğu iyileştirmeleri
 
 **Kabul (Kapı 1):** kullanıcılar planı görüyor ve geri dönüyor mu? Evet ise Faz 2'ye geçilir.
@@ -189,6 +189,8 @@ model User {
   role         Role     @default(USER)
   createdAt    DateTime @default(now())
   deletedAt    DateTime?
+  firstCardAt     DateTime? // huni: ilk kart (ADR 0025)
+  firstPlanViewAt DateTime? // huni: planı ilk görme
   cards        UserCard[]
   spend        SpendProfile[]
   consents     Consent[]
@@ -455,6 +457,15 @@ enum JobRunStatus {
   RUNNING
   SUCCEEDED
   FAILED
+}
+
+// Huni ölçümü (ADR 0025): kullanım günleri; User.firstCardAt / firstPlanViewAt ile birlikte
+model UserActivityDay {
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day    String // "2026-11-03" (Türkiye takvimi); 180 günden eskiler silinir
+
+  @@id([userId, day])
 }
 
 // Kapalı beta geri bildirimi (ADR 0024); kullanıcıyla birlikte silinir

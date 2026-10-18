@@ -6,6 +6,7 @@ import { cache } from "react";
 
 import { auth } from "@/auth";
 import { CONSENT_PATH, SIGNED_OUT_REDIRECT } from "@/lib/auth/routes";
+import { noteActivity } from "@/lib/activity";
 import { hasCurrentConsent } from "@/lib/consent";
 
 export type CurrentUser = Session["user"];
@@ -28,6 +29,7 @@ export async function requireUser(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) redirect(SIGNED_OUT_REDIRECT);
   if (!(await hasCurrentConsent(user.id))) redirect(CONSENT_PATH);
+  noteActivity(user.id);
   return user;
 }
 

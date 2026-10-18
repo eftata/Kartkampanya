@@ -5,6 +5,7 @@ import type { Prisma } from "@kartplan/db";
 import { MAX_USER_CARDS } from "@kartplan/shared";
 import type { AddUserCardInput, UpdateUserCardInput, UserCardDto } from "@kartplan/shared";
 
+import { markFirstCard } from "@/lib/activity";
 import { track } from "@/lib/analytics";
 import type { MutationResult } from "@/lib/result";
 
@@ -71,6 +72,7 @@ export async function addUserCard(
     include,
   });
   track(userId, "card_added", { cards: existing.length + 1 });
+  markFirstCard(userId, row.createdAt);
   return { ok: true, data: toDto(row) };
 }
 

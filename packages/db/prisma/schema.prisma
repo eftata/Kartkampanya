@@ -12,25 +12,28 @@ datasource db {
 }
 
 model User {
-  id             String               @id @default(cuid())
-  email          String               @unique
-  emailVerified  DateTime? // Auth.js: magic link ile doğrulanınca dolar
-  name           String?
-  image          String? // Auth.js: Google profil fotoğrafı
-  role           Role                 @default(USER)
-  createdAt      DateTime             @default(now())
-  deletedAt      DateTime? // KVKK: hesap silme talebi; 30 gün sonra kalıcı silinir
-  accounts       Account[]
-  sessions       Session[]
-  consents       Consent[]
-  cards          UserCard[]
-  spend          SpendProfile[]
-  notifyPrefs    Json                 @default("{}")
-  adminAuditLogs AdminAuditLog[]
-  campaignStatus UserCampaignStatus[]
-  feedback       Feedback[]
-  plans          MonthlyPlan[]
-  notifications  NotificationLog[]
+  id              String               @id @default(cuid())
+  email           String               @unique
+  emailVerified   DateTime? // Auth.js: magic link ile doğrulanınca dolar
+  name            String?
+  image           String? // Auth.js: Google profil fotoğrafı
+  role            Role                 @default(USER)
+  createdAt       DateTime             @default(now())
+  deletedAt       DateTime? // KVKK: hesap silme talebi; 30 gün sonra kalıcı silinir
+  firstCardAt     DateTime? // huni: ilk kart eklendiği an (kart sonra silinse de kalır)
+  firstPlanViewAt DateTime? // huni: planı ilk kez gördüğü an
+  accounts        Account[]
+  sessions        Session[]
+  consents        Consent[]
+  cards           UserCard[]
+  spend           SpendProfile[]
+  notifyPrefs     Json                 @default("{}")
+  adminAuditLogs  AdminAuditLog[]
+  campaignStatus  UserCampaignStatus[]
+  feedback        Feedback[]
+  activityDays    UserActivityDay[]
+  plans           MonthlyPlan[]
+  notifications   NotificationLog[]
 }
 
 enum Role {
@@ -450,4 +453,15 @@ enum FeedbackStatus {
   NEW
   READ
   DONE
+}
+
+/// Kullanıcının uygulamayı kullandığı günler (Türkiye takvimi); huni ölçümünde "geri döndü mü"
+/// (ADR 0025). Gün başına tek satır; 180 günden eskiler günlük işte silinir.
+model UserActivityDay {
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day    String // "2026-11-03"
+
+  @@id([userId, day])
+  @@index([day])
 }

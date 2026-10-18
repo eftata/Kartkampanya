@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import { PlanView } from "@/components/plan-view";
 import { RecomputePlanButton } from "@/components/recompute-plan-button";
+import { markPlanViewed } from "@/lib/activity";
 import { track } from "@/lib/analytics";
 import { requireUser } from "@/lib/auth/session";
 import { getMonthlyPlan } from "@/lib/plan";
@@ -36,6 +37,7 @@ async function PlanContent() {
   }
   const { view } = result;
   track(user.id, "plan_viewed", { month: view.month, status: view.plan.status });
+  markPlanViewed(user.id);
   return (
     <div className="space-y-6">
       <p className="text-muted-foreground">
