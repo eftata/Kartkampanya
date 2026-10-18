@@ -152,7 +152,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 
 ### Sprint 6 — Kapalı beta
 
-- [ ] Production ortamı, yedekleme, izleme panosu
+- [ ] Production ortamı, yedekleme, izleme panosu — **kod tarafı tamam**: herkese açık bileşen durumu `GET /api/status` (veritabanı, Redis, motor; çalışamıyorsa 503), zamanlanmış iş kaydı `JobRun` (bildirim, hesap temizliği; Sentry'ye hata), admin "Sistem durumu" panosu `/admin/durum` (bileşenler, işler + veri hattı kaynakları ve gecikme, onay kuyruğu, kampanya/kullanıcı/e-posta/plan sayıları); production kurulum, yedek ve geri yükleme tatbikatı, uyarılar `docs/operations.md`; ADR 0023. **Bekleyen (hesap gerektirir):** production projeleri ve alan adı, yedek tatbikatı, uptime izleyici
 - [ ] 20–50 davetli kullanıcı (Genç Finans Kulüp, çevre) ve geri bildirim formu
 - [ ] Huni ölçümü: kayıt → kart girdi → planı gördü → 2. hafta geri döndü
 - [ ] Hata düzeltme ve kampanya veri doğruluğu iyileştirmeleri
@@ -433,6 +433,25 @@ model PipelineRun {
 }
 
 enum PipelineRunStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+// Web'deki zamanlanmış işlerin (Vercel Cron) çalışma kaydı; izleme panosu (ADR 0023)
+model JobRun {
+  id         String       @id @default(cuid())
+  name       String // "notifications" | "purge-accounts"
+  status     JobRunStatus @default(RUNNING)
+  startedAt  DateTime     @default(now())
+  finishedAt DateTime?
+  summary    Json? // sayılar; kişisel veri yok
+  error      String? // kısa hata mesajı (temizlenmiş)
+
+  @@index([name, startedAt])
+}
+
+enum JobRunStatus {
   RUNNING
   SUCCEEDED
   FAILED

@@ -400,3 +400,23 @@ enum NotificationKind {
   ENDING_SOON
   WEEKLY_SUMMARY
 }
+
+/// Web'deki zamanlanmış işlerin (Vercel Cron) çalışma kaydı: izleme panosu son çalışmayı ve
+/// gecikmeyi buradan okur (ADR 0023). Veri hattı kendi kaydını `PipelineRun`'a yazar.
+model JobRun {
+  id         String       @id @default(cuid())
+  name       String // "notifications" | "purge-accounts"
+  status     JobRunStatus @default(RUNNING)
+  startedAt  DateTime     @default(now())
+  finishedAt DateTime?
+  summary    Json? // sayılar; kişisel veri yok
+  error      String? // kısa hata mesajı (temizlenmiş)
+
+  @@index([name, startedAt])
+}
+
+enum JobRunStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+}

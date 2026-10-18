@@ -38,6 +38,8 @@ export const RATE_LIMIT_MESSAGE = "Çok fazla istek gönderdin. Biraz bekleyip y
 /** Pencere içindeki sayacı bir artırır ve yeni değeri döner. */
 export interface RateLimitStore {
   hit(key: string, windowSec: number): Promise<number>;
+  /** Sağlık kontrolü (yalnızca Redis deposu). */
+  ping?(): Promise<void>;
 }
 
 export function createMemoryStore(now: () => number = Date.now): RateLimitStore {
@@ -86,6 +88,10 @@ export function createRedisStore(url: string): RateLimitStore {
         redis.multi().incr(key).expire(key, windowSec, "NX").exec(),
       );
       return Number(count);
+    },
+    async ping() {
+      const redis = await withTimeout(connect());
+      await withTimeout(redis.ping());
     },
   };
 }
@@ -152,6 +158,18 @@ function defaultStore(): RateLimitStore {
     ? createRedisStore(process.env.REDIS_URL)
     : createMemoryStore();
   return globalStore.__kartplanRateLimit;
+}
+
+/** İzleme: Redis yapılandırılmamışsa "disabled". */
+export async function pingRateLimitStore(): Promise<"ok" | "down" | "disabled"> {
+  const store = defaultStore();
+  if (!store.ping) return "disabled";
+  try {
+    await store.ping();
+    return "ok";
+  } catch {
+    return "down";
+  }
 }
 
 /** Adlandırılmış sınırı uygular: `id` kullanıcı id'si, e-posta ya da IP olabilir. */

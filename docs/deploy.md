@@ -183,6 +183,8 @@ DATABASE_URL="<Railway DATABASE_PUBLIC_URL>" SEED_ADMIN_EMAIL="sen@ornek.com" pn
 - **Veritabanı:** Prisma migration'ları geri alınmaz; geri dönüş için yeni bir migration yaz.
   Veri kaybı olursa Railway yedeğinden geri yükle.
 
+Production kurulumu, yedekler, geri yükleme tatbikatı ve izleme: [`operations.md`](operations.md).
+
 ## Hata takibi ve analitik (ADR 0022)
 
 - **Sentry:** iki proje önerilir (web: Next.js, motor: Python/FastAPI). DSN'leri yukarıdaki

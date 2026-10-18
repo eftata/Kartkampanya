@@ -12,6 +12,7 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 const items = [
   { href: "/admin/kampanyalar", label: "Onay kuyruğu" },
   { href: "/admin/katalog", label: "Katalog" },
+  { href: "/admin/durum", label: "Sistem durumu" },
 ];
 
 /**

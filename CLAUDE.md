@@ -214,6 +214,14 @@ campaignPath` (`/kampanyalar/<slug>-<id>`, id cuid → son tireden sonrası); fa
 - Ayarlar `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_POSTHOG_KEY/HOST` (build'de gömülür; boşsa kapalı),
   motor `SENTRY_DSN`. e2e sahte toplayıcı `e2e/fake-posthog.mjs` (port 8200) ile koşar.
 
+## İzleme ve işletim — ayrıntı: docs/adr/0023-monitoring.md, docs/operations.md
+
+- `GET /api/status` (herkese açık; veritabanı, Redis, motor → ok/degraded/down, down'da 503),
+  `/api/health` yalnızca canlılık. Admin panosu `/admin/durum` (`lib/system-status.ts`).
+- Yeni zamanlanmış iş → `JOBS`'a ekle (`lib/jobs.ts`, gecikme sınırıyla) ve route'ta
+  `recordJob(ad, async () => ({ sayılar }))` ile sar; özet kişisel veri içermez.
+- Production kurulumu, yedek/geri yükleme tatbikatı, uyarılar: `docs/operations.md`.
+
 ## KVKK — ayrıntı: docs/adr/0019-kvkk.md
 
 - Metinler ve sürümler `apps/web/lib/legal.ts` (taslak; metin değişince sürümü artır → herkes yeniden

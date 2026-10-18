@@ -1,5 +1,6 @@
 import { appBaseUrl, isCronRequest } from "@/lib/cron";
 import { jsonError } from "@/lib/api";
+import { recordJob } from "@/lib/jobs";
 import { runNotifications } from "@/lib/notifications/run";
 
 // Bütün kullanıcıları dolaşır; Vercel'de varsayılan süre sınırı yetmeyebilir.
@@ -16,11 +17,14 @@ export async function GET(request: Request) {
   if (!secret) return jsonError(503, "AUTH_SECRET tanımlı değil.");
   const params = new URL(request.url).searchParams;
   const user = params.get("user");
-  const stats = await runNotifications({
-    base: appBaseUrl(request),
-    secret,
-    forceWeekly: params.get("weekly") === "1",
-    ...(user ? { userIds: [user] } : {}),
+  const run = async () => ({
+    ...(await runNotifications({
+      base: appBaseUrl(request),
+      secret,
+      forceWeekly: params.get("weekly") === "1",
+      ...(user ? { userIds: [user] } : {}),
+    })),
   });
-  return Response.json(stats);
+  // Tek kullanıcılık elle denemeler izleme kaydına (JobRun) girmez.
+  return Response.json(user ? await run() : await recordJob("notifications", run));
 }
