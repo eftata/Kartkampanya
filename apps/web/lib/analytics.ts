@@ -14,7 +14,12 @@ import { after } from "next/server";
  */
 
 export type AnalyticsEvent =
-  "user_signed_up" | "card_added" | "spend_profile_saved" | "plan_viewed" | "campaign_joined";
+  | "user_signed_up"
+  | "card_added"
+  | "spend_profile_saved"
+  | "plan_viewed"
+  | "campaign_joined"
+  | "feedback_sent";
 
 /** Yalnızca sayı, mantıksal değer ya da sabit etiket (ör. ay, plan durumu). */
 export type AnalyticsProperties = Record<string, number | boolean | string>;

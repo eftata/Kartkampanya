@@ -153,7 +153,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 ### Sprint 6 — Kapalı beta
 
 - [ ] Production ortamı, yedekleme, izleme panosu — **kod tarafı tamam**: herkese açık bileşen durumu `GET /api/status` (veritabanı, Redis, motor; çalışamıyorsa 503), zamanlanmış iş kaydı `JobRun` (bildirim, hesap temizliği; Sentry'ye hata), admin "Sistem durumu" panosu `/admin/durum` (bileşenler, işler + veri hattı kaynakları ve gecikme, onay kuyruğu, kampanya/kullanıcı/e-posta/plan sayıları); production kurulum, yedek ve geri yükleme tatbikatı, uyarılar `docs/operations.md`; ADR 0023. **Bekleyen (hesap gerektirir):** production projeleri ve alan adı, yedek tatbikatı, uptime izleyici
-- [ ] 20–50 davetli kullanıcı (Genç Finans Kulüp, çevre) ve geri bildirim formu
+- [ ] 20–50 davetli kullanıcı (Genç Finans Kulüp, çevre) ve geri bildirim formu — **geri bildirim formu tamam**: üst menüde "Geri bildirim" (açıldığı sayfayı iletir) → `/geri-bildirim` (konu: hata / öneri / yanlış kampanya-kart bilgisi / diğer, isteğe bağlı 1–5 puan, mesaj; kart numarası reddedilir; kullanıcı başına saatte 10), "Gönderdiklerin" listesi durumla; API `GET/POST /api/me/feedback`; admin gelen kutusu `/admin/geri-bildirim` (yeni / okundu / tamamlandı, e-postayla yanıt, işlem kaydı); veri kopyasında yer alır, hesapla silinir; ADR 0024. Davetler bekliyor
 - [ ] Huni ölçümü: kayıt → kart girdi → planı gördü → 2. hafta geri döndü
 - [ ] Hata düzeltme ve kampanya veri doğruluğu iyileştirmeleri
 
@@ -455,6 +455,20 @@ enum JobRunStatus {
   RUNNING
   SUCCEEDED
   FAILED
+}
+
+// Kapalı beta geri bildirimi (ADR 0024); kullanıcıyla birlikte silinir
+model Feedback {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      FeedbackKind // BUG | IDEA | DATA | OTHER
+  rating    Int? // 1–5
+  message   String // ≤ 2000; kart numarası reddedilir
+  page      String? // yalnızca yol
+  status    FeedbackStatus @default(NEW) // NEW | READ | DONE
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 }
 
 // --- Admin işlem kaydı: kim, neyi, ne zaman değiştirdi / doğruladı (güvenlik listesi) ---

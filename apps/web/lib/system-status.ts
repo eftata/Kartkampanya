@@ -87,13 +87,14 @@ export async function getSystemOverview(now = new Date()) {
       prisma.user.count({ where: { deletedAt: null } }),
       prisma.user.count({ where: { deletedAt: { not: null } } }),
     ]);
-  const [notifications, plans] = await Promise.all([
+  const [notifications, plans, newFeedback] = await Promise.all([
     prisma.notificationLog.groupBy({
       by: ["kind"],
       where: { sentAt: { gte: since } },
       _count: { _all: true },
     }),
     prisma.monthlyPlan.count({ where: { computedAt: { gte: since } } }),
+    prisma.feedback.count({ where: { status: "NEW" } }),
   ]);
 
   return {
@@ -119,7 +120,7 @@ export async function getSystemOverview(now = new Date()) {
         health: source.active ? runHealth(last, now, PIPELINE_MAX_AGE_HOURS) : null,
       };
     }),
-    queue: { drafts, oldestDraftAt: oldestDraft?.createdAt ?? null },
+    queue: { drafts, oldestDraftAt: oldestDraft?.createdAt ?? null, newFeedback },
     campaigns: { active, endingSoon },
     users: { active: users, pendingDeletion: deleting },
     last24h: {

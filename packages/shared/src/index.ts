@@ -1,6 +1,7 @@
 export * from "./admin-catalog";
 export * from "./campaigns";
 export * from "./cards";
+export * from "./feedback";
 export * from "./money";
 export * from "./notifications";
 export * from "./plan";

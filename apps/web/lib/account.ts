@@ -93,6 +93,17 @@ export async function exportUserData(userId: string, now = new Date()) {
         orderBy: { sentAt: "asc" },
         select: { kind: true, key: true, sentAt: true },
       },
+      feedback: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          kind: true,
+          rating: true,
+          message: true,
+          page: true,
+          status: true,
+          createdAt: true,
+        },
+      },
       adminAuditLogs: {
         orderBy: { createdAt: "asc" },
         select: { action: true, entityType: true, entityId: true, createdAt: true },
@@ -148,6 +159,7 @@ export async function exportUserData(userId: string, now = new Date()) {
     })),
     monthlyPlans: user.plans,
     sentNotifications: user.notifications,
+    feedback: user.feedback,
     adminActions: user.adminAuditLogs,
   };
 }

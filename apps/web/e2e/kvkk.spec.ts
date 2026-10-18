@@ -32,7 +32,7 @@ test("onay ekranı: zorunlu onaylar olmadan hizmet yok, pazarlama isteğe bağl�
   // Aydınlatma metni herkese açık ve sürümlü.
   await page.goto("/aydinlatma");
   await expect(page.getByRole("heading", { name: "KVKK Aydınlatma Metni" })).toBeVisible();
-  await expect(page.getByText(/^Sürüm \d{4}-\d{2}-\d{2}$/)).toBeVisible();
+  await expect(page.getByText(/^Sürüm \d{4}-\d{2}-\d{2}(\.\d+)?$/)).toBeVisible();
 });
 
 test("Profilim: verilerimi indir, pazarlama izni ve hesabı sil", async ({ page, request }) => {

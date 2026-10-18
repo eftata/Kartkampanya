@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { FeedbackLink, FeedbackLinkFallback } from "@/components/feedback-link";
 import { NavLinks } from "@/components/nav-links";
 import { UserMenu } from "@/components/user-menu";
 
@@ -24,9 +25,15 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
             </Link>
             <NavLinks items={items} className="hidden md:flex" />
           </div>
-          <Suspense fallback={<div className="bg-muted h-8 w-24 animate-pulse rounded-md" />}>
-            <UserMenu />
-          </Suspense>
+          <div className="flex items-center gap-3">
+            {/* usePathname dinamik rotalarda istek anına kalır; kabuk bağlantıyı yine gösterir. */}
+            <Suspense fallback={<FeedbackLinkFallback />}>
+              <FeedbackLink />
+            </Suspense>
+            <Suspense fallback={<div className="bg-muted h-8 w-24 animate-pulse rounded-md" />}>
+              <UserMenu />
+            </Suspense>
+          </div>
         </div>
         {/* Küçük ekranlarda menü ayrı, yatay kaydırılabilir satırda. */}
         <NavLinks items={items} className="overflow-x-auto border-t px-2 py-1 md:hidden" />

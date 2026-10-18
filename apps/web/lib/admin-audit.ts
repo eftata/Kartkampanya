@@ -6,7 +6,7 @@ import type { Prisma } from "@kartplan/db";
 /** İşlemi yapan admin; işlem kaydına yazılır. */
 export type Actor = { id: string; email: string };
 
-export type EntityType = "Bank" | "Program" | "CardProduct" | "Campaign";
+export type EntityType = "Bank" | "Program" | "CardProduct" | "Campaign" | "Feedback";
 
 /** Admin işlem kaydı; değişikliği yapan transaction içinde yazılır (ADR 0006). */
 export async function audit(

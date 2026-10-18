@@ -180,6 +180,7 @@ async function SystemStatus() {
             hint={`${overview.campaigns.endingSoon} tanesi 7 gün içinde bitiyor`}
           />
           <Stat label="Hesaplanan plan" value={overview.last24h.plans} />
+          <Stat label="Yeni geri bildirim" value={overview.queue.newFeedback} />
           <Stat
             label="Kullanıcı"
             value={overview.users.active}

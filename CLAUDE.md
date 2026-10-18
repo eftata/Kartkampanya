@@ -222,6 +222,15 @@ campaignPath` (`/kampanyalar/<slug>-<id>`, id cuid → son tireden sonrası); fa
   `recordJob(ad, async () => ({ sayılar }))` ile sar; özet kişisel veri içermez.
 - Production kurulumu, yedek/geri yükleme tatbikatı, uyarılar: `docs/operations.md`.
 
+## Geri bildirim — ayrıntı: docs/adr/0024-feedback.md
+
+- `Feedback` (kullanıcıyla silinir, veri kopyasında). İş mantığı `lib/feedback.ts`, eylemler
+  `lib/feedback-actions.ts`, form `components/feedback-form.tsx`, sayfa `/geri-bildirim` (üst menü
+  `FeedbackLink` açıldığı yolu `?sayfa=` ile iletir), API `GET/POST /api/me/feedback`, admin
+  `/admin/geri-bildirim` (durum değişikliği işlem kaydına). Etiketler `lib/feedback-labels.ts`.
+- Kullanıcıya ait yeni bir tablo eklenince: `onDelete: Cascade`, `exportUserData`'ya ekle,
+  aydınlatma metnini güncelle ve sürümünü artır.
+
 ## KVKK — ayrıntı: docs/adr/0019-kvkk.md
 
 - Metinler ve sürümler `apps/web/lib/legal.ts` (taslak; metin değişince sürümü artır → herkes yeniden
