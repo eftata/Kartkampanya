@@ -49,6 +49,18 @@ describe("bildirim e-postaları", () => {
     );
   });
 
+  it("push: kısa metin, uygulama içi yol (tek kampanyada detay)", () => {
+    expect(joinReminderEmail([campaign("a")], links).push).toEqual({
+      title: "Katılmayı unutma",
+      body: '"Kampanya <a>" başladı: katılmayı unutma',
+      url: "/kampanyalarim/a",
+      tag: "join",
+    });
+    expect(endingSoonEmail([campaign("a"), campaign("b")], "2026-11-28", links).push).toMatchObject(
+      { body: "2 kampanyan bitmek üzere", url: "/kampanyalarim" },
+    );
+  });
+
   it("son günler: kalan gün ve bugün biten", () => {
     expect(
       endingSoonEmail([campaign("a", { endsAt: "2026-11-30" })], "2026-11-28", links).subject,
@@ -79,5 +91,6 @@ describe("bildirim e-postaları", () => {
     expect(email.text).toContain("• Market: Bonus Platinum (₺6.000)");
     expect(email.text).toContain("• Markette puan https://kartplan.test/kampanyalarim/k1");
     expect(email.text).toContain("Planın tamamı: https://kartplan.test/plan");
+    expect(email.push).toMatchObject({ title: "Bu haftanın planı", url: "/plan" });
   });
 });

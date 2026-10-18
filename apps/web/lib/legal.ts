@@ -17,7 +17,7 @@ export const CONSENT_KINDS = {
 } as const;
 
 export const LEGAL_VERSIONS = {
-  aydinlatma: "2026-10-18.6",
+  aydinlatma: "2026-10-18.7",
   acikRiza: "2026-10-18",
   pazarlama: "2026-10-17",
 } as const;
@@ -41,7 +41,7 @@ export const AYDINLATMA_METNI: LegalSection[] = [
     title: "İşlenen kişisel veriler",
     paragraphs: [
       "Kimlik ve iletişim: e-posta adresi; Google ile girişte ad ve profil fotoğrafı.",
-      "Hizmet verileri: seçtiğin kart ürünleri (banka, program, kart adı), isteğe bağlı kart limiti ve hesap kesim günü, kartlara verdiğin takma adlar, kategori başına aylık harcama tutarları ve tercih ettiğin markalar, kampanyalara katıldığına dair işaretlerin, hesaplanan aylık planların, bildirim tercihlerin, gönderilen bildirimlerin kaydı ve bize gönderdiğin geri bildirim mesajları.",
+      "Hizmet verileri: seçtiğin kart ürünleri (banka, program, kart adı), isteğe bağlı kart limiti ve hesap kesim günü, kartlara verdiğin takma adlar, kategori başına aylık harcama tutarları ve tercih ettiğin markalar, kampanyalara katıldığına dair işaretlerin, hesaplanan aylık planların, bildirim tercihlerin, gönderilen bildirimlerin kaydı, anlık bildirimi açtığın cihazların bildirim aboneliği (tarayıcının bildirim servisi adresi ve şifreleme anahtarları) ve bize gönderdiğin geri bildirim mesajları.",
       "Harcama kayıtları: kendi girdiğin harcamalar (kart, kategori, isteğe bağlı marka, tutar, tarih); kampanya ilerlemeni ve ayın kalanı için planını hesaplamakta kullanılır, sen silene ya da hesabını kapatana kadar saklanır.",
       "Ekstre yükleme: kredi kartı ekstreni (PDF) yüklersen dosya yalnızca harcama satırlarını çıkarmak için bellekte işlenir; dosya, içindeki ad, adres, kart numarası ve açıklamalar ile PDF parolası saklanmaz. Yalnızca onayladığın satırların tarihi, tutarı ve kategorisi harcama kaydı olur.",
       "Kullanım günleri: uygulamayı hangi günlerde kullandığın (saat, sayfa ya da işlem değil), ilk kart ekleme ve planı ilk görme zamanı; 180 gün saklanır.",
@@ -63,6 +63,7 @@ export const AYDINLATMA_METNI: LegalSection[] = [
     title: "Aktarım",
     paragraphs: [
       "Verilerin, hizmetin çalışması için barındırma (web uygulaması ve veritabanı), e-posta gönderimi, hata takibi (Sentry) ve kullanım istatistikleri (PostHog, Avrupa Birliği sunucuları) hizmeti aldığımız sağlayıcılarla paylaşılır. Bu sağlayıcıların bir kısmının sunucuları yurt dışındadır; bu aktarım için açık rızan istenir (KVKK m. 9).",
+      "Bir cihazda anlık bildirimi açarsan bildirimler, tarayıcının bildirim servisi (Chrome için Google, Firefox için Mozilla, Safari için Apple, Edge için Microsoft) üzerinden iletilir. Bildirim içeriği uçtan uca şifrelidir; servis yalnızca cihaza iletim için gereken adresi görür. Cihazda bildirimi kapatınca abonelik silinir.",
       "Bankalara ya da reklam ağlarına kişisel veri aktarılmaz. Ürün analitiği araçlarına e-posta ya da ad gönderilmez.",
       "Kampanya metinlerini işlemek için kullanılan yapay zekâ hizmetine yalnızca bankaların herkese açık kampanya metinleri gönderilir; senin verilerin gönderilmez.",
     ],

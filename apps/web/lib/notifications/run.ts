@@ -21,18 +21,23 @@ import type { Email, Links } from "@/lib/notifications/templates";
 import { unsubscribeParams } from "@/lib/notifications/unsubscribe";
 import type { UnsubscribeTarget } from "@/lib/notifications/unsubscribe";
 import { getMonthlyPlan } from "@/lib/plan";
+import { sendPushToUser } from "@/lib/push";
+import type { PushSender } from "@/lib/push";
 import { monthLabel } from "@/lib/plan-request";
 
 export type NotificationStats = {
   users: number;
   sent: Record<NotificationKind, number>;
   failed: number;
+  /** Push açık cihazlara giden bildirim sayısı (ADR 0031). */
+  pushed: number;
 };
 
 /**
  * Günlük bildirim işi (ADR 0018): e-postası doğrulanmış, silinmemiş ve kartı olan her kullanıcı
  * için hangi bildirimlerin gideceğini seçer, tür başına tek toplu e-posta gönderir ve gönderilenleri
- * `NotificationLog`'a yazar (aynısı bir daha gitmez). Bir kullanıcının hatası diğerlerini durdurmaz.
+ * `NotificationLog`'a yazar (aynısı bir daha gitmez). E-posta gidince aynı bildirimin kısa hâli
+ * push açık cihazlara da gönderilir (ADR 0031). Bir kullanıcının hatası diğerlerini durdurmaz.
  */
 export async function runNotifications({
   base,
@@ -41,6 +46,7 @@ export async function runNotifications({
   forceWeekly = false,
   forceMonthly = false,
   send = sendMail,
+  push,
   userIds,
 }: {
   /** E-postadaki bağlantıların kökü (https://alan-adı). */
@@ -51,6 +57,8 @@ export async function runNotifications({
   forceWeekly?: boolean;
   forceMonthly?: boolean;
   send?: SendMail;
+  /** Push gönderici (testler); verilmezse VAPID yapılandırmasıyla web push. */
+  push?: PushSender;
   /** Yalnızca bu kullanıcılar (testler ve elle çalıştırma). */
   userIds?: string[];
 }): Promise<NotificationStats> {
@@ -59,6 +67,7 @@ export async function runNotifications({
     users: 0,
     sent: { JOIN_REMINDER: 0, ENDING_SOON: 0, WEEKLY_SUMMARY: 0, MONTHLY_REPORT: 0 },
     failed: 0,
+    pushed: 0,
   };
   const users = await prisma.user.findMany({
     where: {
@@ -96,6 +105,12 @@ export async function runNotifications({
       } catch (error) {
         stats.failed += 1;
         console.error(`bildirim ${kind} gönderilemedi (kullanıcı ${user.id}):`, error);
+        return;
+      }
+      try {
+        stats.pushed += (await sendPushToUser(user.id, email.push, push)).sent;
+      } catch (error) {
+        console.error(`push ${kind} gönderilemedi (kullanıcı ${user.id}):`, error);
       }
     };
 

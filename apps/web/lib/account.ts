@@ -96,6 +96,10 @@ export async function exportUserData(userId: string, now = new Date()) {
         select: { kind: true, key: true, sentAt: true },
       },
       activityDays: { orderBy: { day: "asc" }, select: { day: true } },
+      pushDevices: {
+        orderBy: { createdAt: "asc" },
+        select: { endpoint: true, createdAt: true, lastSentAt: true },
+      },
       transactions: {
         orderBy: [{ date: "asc" }, { createdAt: "asc" }],
         select: {
@@ -179,6 +183,12 @@ export async function exportUserData(userId: string, now = new Date()) {
     sentNotifications: user.notifications,
     feedback: user.feedback,
     activeDays: user.activityDays.map((item) => item.day),
+    // Abonelik adresi cihaza bildirim göndermeye yarar: dosyada yalnızca servis adı.
+    pushDevices: user.pushDevices.map((device) => ({
+      service: new URL(device.endpoint).hostname,
+      createdAt: device.createdAt,
+      lastSentAt: device.lastSentAt,
+    })),
     transactions: user.transactions.map((item) => ({
       date: item.date.toISOString().slice(0, 10),
       card: item.userCard.nickname || item.userCard.cardProduct.name,

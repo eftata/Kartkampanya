@@ -290,6 +290,20 @@ campaignPath` (`/kampanyalar/<slug>-<id>`, id cuid → son tireden sonrası); fa
   (`unsubscribe.ts`, AUTH_SECRET); `/abonelik` GET'te kapatmaz, onay ister; tek tık `POST /api/unsubscribe`.
 - e2e: Mailpit yardımcıları `e2e/mailpit.ts` (`waitForMail`, `countMails`), anahtar `e2e/env.ts`.
 
+## PWA ve web push — ayrıntı: docs/adr/0031-pwa-push.md
+
+- Manifest `app/manifest.ts`, simgeler `public/icons/` (kaynak `icon.svg`), servis çalışanı
+  `public/sw.js` (kökte `components/service-worker.tsx` kaydeder; yalnızca `offline.html` ve simge
+  önbelleğe alınır, kişisel sayfa asla). `sw.js` değişince `CACHE` sürümünü artır.
+- Push: `PushSubscription`, iş mantığı `lib/push.ts` (`isAllowedPushEndpoint` izin listesi — SSRF;
+  gönderim `generateRequestDetails` + `fetch`, yönlendirme yok; 404/410 → kayıt silinir), eylemler
+  `lib/push-actions.ts`, arayüz `components/push-toggle.tsx` (Profilim), API `/api/me/push`,
+  `/api/me/push/test`. Ayarlar `VAPID_PUBLIC_KEY/PRIVATE_KEY/SUBJECT` (çalışma anında; boşsa kapalı).
+- Bildirim şablonları (`templates.ts`) her e-postanın `push` hâlini de üretir; `runNotifications`
+  e-posta gidince push açık cihazlara gönderir (aynı tercihler, aynı `NotificationLog`).
+- e2e: sahte push servisi `e2e/fake-push.mjs` (port 8300, `PUSH_EXTRA_ORIGINS`), `push.spec.ts`
+  yükü RFC 8291 ile çözer. Başsız Chromium bildirim izni vermez; gerçek abonelik e2e'de yok.
+
 ## Veri hattı (`services/engine/engine/pipeline`) — ayrıntı: docs/adr/0008-pipeline-adapters.md
 
 - Adaptör = `BankAdapter` alt sınıfı (`adapters/<ad>.py`, `@register`): yalnızca `parse_list` ve

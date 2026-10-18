@@ -124,24 +124,31 @@ e-postalar spama düşer. Gerekenler: host, port (465 → TLS), kullanıcı, şi
    - **Production Branch:** `main`
 3. **Environment Variables** (Production ve Preview):
 
-   | Değişken                                      | Değer                            |
-   | --------------------------------------------- | -------------------------------- |
-   | `DATABASE_URL`                                | Railway `DATABASE_PUBLIC_URL`    |
-   | `AUTH_SECRET`                                 | `openssl rand -base64 32`        |
-   | `EMAIL_SERVER_HOST` / `EMAIL_SERVER_PORT`     | SMTP sağlayıcısı                 |
-   | `EMAIL_SERVER_USER` / `EMAIL_SERVER_PASSWORD` | SMTP sağlayıcısı                 |
-   | `EMAIL_FROM`                                  | `KartPlan <giris@alan-adin.com>` |
-   | `ENGINE_URL`                                  | `https://<motor>.up.railway.app` |
-   | `ENGINE_TOKEN`                                | Railway'dekiyle aynı             |
-   | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`       | (opsiyonel) Google OAuth         |
-   | `SEED_ADMIN_EMAIL`                            | (opsiyonel) kendi e-postan       |
-   | `CRON_SECRET`                                 | `openssl rand -hex 32`           |
-   | `APP_URL`                                     | `https://<staging-alan-adı>`     |
-   | `REDIS_URL`                                   | Railway `REDIS_PUBLIC_URL`       |
-   | `NEXT_PUBLIC_SENTRY_DSN`                      | (opsiyonel) Sentry web projesi   |
-   | `NEXT_PUBLIC_SENTRY_ENVIRONMENT`              | `staging`                        |
-   | `NEXT_PUBLIC_POSTHOG_KEY`                     | (opsiyonel) PostHog `phc_...`    |
-   | `NEXT_PUBLIC_POSTHOG_HOST`                    | `https://eu.i.posthog.com`       |
+   | Değişken                                      | Değer                             |
+   | --------------------------------------------- | --------------------------------- |
+   | `DATABASE_URL`                                | Railway `DATABASE_PUBLIC_URL`     |
+   | `AUTH_SECRET`                                 | `openssl rand -base64 32`         |
+   | `EMAIL_SERVER_HOST` / `EMAIL_SERVER_PORT`     | SMTP sağlayıcısı                  |
+   | `EMAIL_SERVER_USER` / `EMAIL_SERVER_PASSWORD` | SMTP sağlayıcısı                  |
+   | `EMAIL_FROM`                                  | `KartPlan <giris@alan-adin.com>`  |
+   | `ENGINE_URL`                                  | `https://<motor>.up.railway.app`  |
+   | `ENGINE_TOKEN`                                | Railway'dekiyle aynı              |
+   | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`       | (opsiyonel) Google OAuth          |
+   | `SEED_ADMIN_EMAIL`                            | (opsiyonel) kendi e-postan        |
+   | `CRON_SECRET`                                 | `openssl rand -hex 32`            |
+   | `APP_URL`                                     | `https://<staging-alan-adı>`      |
+   | `REDIS_URL`                                   | Railway `REDIS_PUBLIC_URL`        |
+   | `NEXT_PUBLIC_SENTRY_DSN`                      | (opsiyonel) Sentry web projesi    |
+   | `NEXT_PUBLIC_SENTRY_ENVIRONMENT`              | `staging`                         |
+   | `NEXT_PUBLIC_POSTHOG_KEY`                     | (opsiyonel) PostHog `phc_...`     |
+   | `NEXT_PUBLIC_POSTHOG_HOST`                    | `https://eu.i.posthog.com`        |
+   | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`      | (opsiyonel) web push; aşağıya bak |
+   | `VAPID_SUBJECT`                               | `mailto:destek@alan-adin.com`     |
+
+   Web push anahtarları (ADR 0031) bir kez üretilir ve değiştirilmez (değişirse tüm cihaz
+   abonelikleri geçersizleşir): `pnpm --filter @kartplan/web exec web-push generate-vapid-keys`.
+   Üçü de boşsa push kapalıdır; e-posta bildirimleri etkilenmez. `PUSH_EXTRA_ORIGINS` yalnızca e2e
+   içindir, üretimde tanımlama.
 
    `AUTH_URL` gerekmez: Auth.js Vercel'de adresi istekten alır (`trustHost`).
    Google değişkenlerini ve `APP_URL`'i sonradan eklersen ya da değiştirirsen **yeniden deploy et**:

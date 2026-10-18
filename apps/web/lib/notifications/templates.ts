@@ -1,5 +1,5 @@
 /** Bildirim e-postaları (saf; ADR 0018). Türkçe, düz metin + sade HTML, her birinde çıkış bağlantısı. */
-import type { MyCampaignDto } from "@kartplan/shared";
+import type { MyCampaignDto, PushPayload } from "@kartplan/shared";
 import { formatKurus } from "@kartplan/shared";
 
 import { daysBetween } from "@/lib/campaign-match";
@@ -12,6 +12,8 @@ export type Email = {
   html: string;
   /** Bu e-postanın kapatılabilir türü (List-Unsubscribe). */
   unsubscribe: UnsubscribeTarget;
+  /** Aynı bildirimin kısa hâli: push açık cihazlara (ADR 0031). */
+  push: PushPayload;
 };
 
 export type Links = {
@@ -64,6 +66,10 @@ function layout(
 
 const campaignUrl = (links: Links, id: string) => `${links.base}/kampanyalarim/${id}`;
 
+/** Push tıklanınca: tek kampanyaysa detayı, değilse liste. */
+const campaignsPath = (campaigns: MyCampaignDto[]) =>
+  campaigns.length === 1 && campaigns[0] ? `/kampanyalarim/${campaigns[0].id}` : "/kampanyalarim";
+
 function campaignList(
   campaigns: MyCampaignDto[],
   links: Links,
@@ -102,7 +108,12 @@ export function joinReminderEmail(campaigns: MyCampaignDto[], links: Links): Ema
     "joinReminder",
     links,
   );
-  return { subject, ...body, unsubscribe: "joinReminder" };
+  return {
+    subject,
+    ...body,
+    unsubscribe: "joinReminder",
+    push: { title: "Katılmayı unutma", body: subject, url: campaignsPath(campaigns), tag: "join" },
+  };
 }
 
 export function endingSoonEmail(campaigns: MyCampaignDto[], today: string, links: Links): Email {
@@ -124,7 +135,17 @@ export function endingSoonEmail(campaigns: MyCampaignDto[], today: string, links
     "endingSoon",
     links,
   );
-  return { subject, ...body, unsubscribe: "endingSoon" };
+  return {
+    subject,
+    ...body,
+    unsubscribe: "endingSoon",
+    push: {
+      title: "Kampanyaların bitmek üzere",
+      body: subject,
+      url: campaignsPath(campaigns),
+      tag: "ending",
+    },
+  };
 }
 
 export function weeklySummaryEmail(summary: WeeklySummary, links: Links): Email {
@@ -161,7 +182,12 @@ export function weeklySummaryEmail(summary: WeeklySummary, links: Links): Email 
     "weeklySummary",
     links,
   );
-  return { subject, ...body, unsubscribe: "weeklySummary" };
+  return {
+    subject,
+    ...body,
+    unsubscribe: "weeklySummary",
+    push: { title: "Bu haftanın planı", body: totals, url: "/plan", tag: "weekly" },
+  };
 }
 
 export type MonthlyReportSummary = {
@@ -215,5 +241,15 @@ export function monthlyReportEmail(summary: MonthlyReportSummary, links: Links):
     "monthlyReport",
     links,
   );
-  return { subject, ...body, unsubscribe: "monthlyReport" };
+  return {
+    subject,
+    ...body,
+    unsubscribe: "monthlyReport",
+    push: {
+      title: `${summary.monthLabel} raporun`,
+      body: totals,
+      url: `/plan/rapor?ay=${summary.month}`,
+      tag: "monthly",
+    },
+  };
 }

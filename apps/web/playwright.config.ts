@@ -2,6 +2,7 @@ import path from "node:path";
 
 import { defineConfig, devices } from "@playwright/test";
 import { config } from "dotenv";
+import webpush from "web-push";
 
 import { E2E_CRON_SECRET } from "./e2e/env";
 
@@ -14,6 +15,10 @@ const ENGINE_PORT = Number(process.env.E2E_ENGINE_PORT ?? 8100);
 const engineURL = `http://localhost:${ENGINE_PORT}`;
 const POSTHOG_PORT = Number(process.env.E2E_POSTHOG_PORT ?? 8200);
 const posthogURL = `http://localhost:${POSTHOG_PORT}`;
+const PUSH_PORT = Number(process.env.E2E_PUSH_PORT ?? 8300);
+const pushOrigin = `http://127.0.0.1:${PUSH_PORT}`;
+// Her çalıştırmada yeni VAPID anahtarı (test sunucusu başlarken; sahte push servisi doğrulamaz).
+const vapid = webpush.generateVAPIDKeys();
 // Test motoru ile test sunucusu arasında paylaşılan anahtar (gerçek ortamın anahtarı değil).
 const engineToken = "e2e-engine-token";
 
@@ -42,6 +47,13 @@ export default defineConfig({
       env: { FAKE_POSTHOG_PORT: String(POSTHOG_PORT) },
     },
     {
+      // Sahte web push servisi (push.spec): şifreli bildirimleri toplar.
+      command: "node e2e/fake-push.mjs",
+      url: `${pushOrigin}/health`,
+      reuseExistingServer: !process.env.CI,
+      env: { FAKE_PUSH_PORT: String(PUSH_PORT) },
+    },
+    {
       // Optimizasyon motoru (plan sayfası). Python 3.12 + uv gerekir.
       command: `uv run uvicorn engine.api:app --port ${ENGINE_PORT}`,
       cwd: path.resolve(import.meta.dirname, "../../services/engine"),
@@ -65,6 +77,10 @@ export default defineConfig({
         APP_URL: baseURL,
         NEXT_PUBLIC_POSTHOG_KEY: "phc_e2e",
         NEXT_PUBLIC_POSTHOG_HOST: posthogURL,
+        VAPID_PUBLIC_KEY: vapid.publicKey,
+        VAPID_PRIVATE_KEY: vapid.privateKey,
+        VAPID_SUBJECT: "mailto:e2e@kartplan.test",
+        PUSH_EXTRA_ORIGINS: pushOrigin,
       },
     },
   ],

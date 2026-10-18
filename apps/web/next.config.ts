@@ -30,6 +30,11 @@ const nextConfig: NextConfig = {
         telemetry: [sentryDsn(), posthogKey() ? posthogHost() : undefined],
       }),
     },
+    {
+      // Servis çalışanı her açılışta denetlensin (eski sürüm takılı kalmasın; ADR 0031).
+      source: "/sw.js",
+      headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }],
+    },
   ],
   partialPrefetching: true,
   turbopack: {

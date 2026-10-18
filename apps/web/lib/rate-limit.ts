@@ -27,6 +27,8 @@ export const RATE_LIMITS = {
   magicLinkSend: { limit: 8, windowSec: 60 * 60 },
   /** Ekstre PDF'i ayrıştırma (motorda CPU işi; kullanıcı başına). */
   statementParse: { limit: 20, windowSec: 60 * 60 },
+  /** Deneme push bildirimi (kullanıcı başına; push servislerine istek). */
+  pushTest: { limit: 5, windowSec: 60 * 60 },
   /** Geri bildirim gönderme (kullanıcı başına). */
   feedback: { limit: 10, windowSec: 60 * 60 },
   /** Planı zorla yeniden hesaplatma (motor maliyeti). */

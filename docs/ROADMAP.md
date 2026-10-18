@@ -165,7 +165,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 - [ ] Ekstre PDF yükleme → işlem çıkarma (banka başına ayrıştırıcı) — **altyapı ve genel ayrıştırıcı tamam**: `/harcamalar/ekstre` (kart + PDF ≤ 4 MB + gerekirse parola) → motor `POST /statements/parse` (pypdf, durumsuz; ödeme/iade/toplam satırları atlanır, kart numarası açıklamadan silinir, taksit işaretlenir) → onay ekranı (marka/kategori önerisi, mükerrer ve 90 gün dışı satırlar seçili gelmez) → `Transaction (source = STATEMENT)`; PDF, metin, açıklama ve parola saklanmaz; ADR 0028. **Bekleyen:** banka başına ayrıştırıcılar gerçek (anonimleştirilmiş) ekstre örnekleri gerektirir
 - [x] Ay sonu raporu: kazanılan / kaçırılan — `/plan/rapor?ay=` (ay seçici; kazanılan: o ay biten kampanyalardan ödül + kart temel puanı; kaçırılan: eşiğe ulaşılamayan ve katılmadığın için kaçırılan kampanyalar; plan beklentisiyle kıyas; ay bitmediyse "şimdiye kadar"), API `GET /api/me/report?month=`, ayın 1'inde rapor e-postası (`MONTHLY_REPORT`, yalnızca o ay harcama girildiyse; Profilim'den kapatılabilir), kapanan ayda `MonthlyPlan.realizedKurus` yazılır; ADR 0029
 - [x] Tek alışveriş hesaplayıcı ("4.000 TL telefon, hangi kart?") — `/hesapla` (menüde "Hangi kart?"; tutar, ana kategori, isteğe bağlı marka ve tarih ≤ 90 gün; kart başına temel kazanç + kampanyalarda bu alışverişin marjinal kazancı, mevcut harcamalar ve katılımlarla; katılım gereken kampanya "katılırsan" olarak ayrı; limiti yetmeyen kart sona; hiçbir şey kaydedilmez), API `POST /api/me/purchase-advice`; ADR 0030
-- [ ] PWA + web push
+- [x] PWA + web push — ana ekrana eklenebilir uygulama (`app/manifest.ts`, simgeler `public/icons/`, başlangıç `/plan`, kısayollar), servis çalışanı `public/sw.js` (bağlantı yokken `offline.html`; kişisel sayfa önbelleğe alınmaz), Profilim → Bildirimler → "Bu cihazda anlık bildirim" (aç / deneme / kapat; iPhone'da ana ekrana ekleme yönlendirmesi); e-posta bildirimlerinin kısa hâli aynı tercihlerle push açık cihazlara da gider (VAPID, uçtan uca şifreli, push servisi izin listesi, 404/410'da abonelik silinir, kullanıcı başına 10 cihaz); API `GET/POST/DELETE /api/me/push`, `POST /api/me/push/test`; veri kopyası ve aydınlatma metni güncel; ADR 0031
 - [x] Kullanıcı hata bildirimi ("bu kampanya yanlış") — Sprint 6'da yapıldı (ADR 0026)
 
 ### Faz 3 — Otomasyon (Sprint 13+)
@@ -537,6 +537,9 @@ Faz 2 (ADR 0027): `Transaction` — kullanıcı, kart (`UserCard`, kart kaldır�
 kategori, isteğe bağlı marka, `amountKurus`, `date` (Türkiye günü), `source` (`MANUAL` |
 `STATEMENT`). Kampanya ilerlemesi buradan hesaplanır (saklanmaz; `progressKurus` kullanılmıyor).
 
+Faz 2 (ADR 0031): `PushSubscription` — kullanıcı, `endpoint` (benzersiz; push servisi adresi),
+`p256dh`, `auth`, `createdAt`, `lastSentAt`; kullanıcıyla silinir.
+
 ## API sözleşmesi
 
 Tüm endpoint'ler `apps/web/app/api` altındadır, istek/yanıt gövdeleri `packages/shared` içindeki zod şemalarıyla doğrulanır. Python motoru dışarıya açılmaz; yalnızca web sunucusu çağırır.
@@ -553,6 +556,8 @@ Tüm endpoint'ler `apps/web/app/api` altındadır, istek/yanıt gövdeleri `pack
 | POST                        | `/api/me/plan/recompute`                                                 | Planı yeniden hesapla                     | 4      |
 | GET / PUT                   | `/api/me/notifications`                                                  | Bildirim tercihleri                       | 5      |
 | GET                         | `/api/me/export`                                                         | KVKK veri indirme (JSON)                  | 5      |
+| GET / POST / DELETE         | `/api/me/push`                                                           | Web push cihaz kaydı (Faz 2)              | F2     |
+| POST                        | `/api/me/push/test`                                                      | Deneme push bildirimi                     | F2     |
 | DELETE                      | `/api/me`                                                                | Hesap silme (30 gün içinde kalıcı)        | 5      |
 | GET                         | `/api/admin/review-queue`                                                | Onay bekleyen kampanyalar                 | 2      |
 | PUT                         | `/api/admin/campaigns/{id}`                                              | Kural düzenle, onayla / reddet            | 2      |

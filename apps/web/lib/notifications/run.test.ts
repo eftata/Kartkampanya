@@ -206,6 +206,49 @@ describe.skipIf(!process.env.DATABASE_URL)("bildirim işi (veritabanı)", () => 
     await prisma.transaction.deleteMany({ where: { userId: ids.user } });
   });
 
+  it("push: e-postayla birlikte cihazlara da gider; biten abonelik silinir", async () => {
+    const pushes: { endpoint: string; payload: unknown }[] = [];
+    await prisma.pushSubscription.createMany({
+      data: ["canli", "bitti"].map((name) => ({
+        userId: ids.user,
+        endpoint: `https://fcm.googleapis.com/fcm/send/${name}-${run}`,
+        p256dh: "p".repeat(87),
+        auth: "a".repeat(22),
+      })),
+    });
+    const stats = await runNotifications({
+      base: "https://kartplan.test",
+      secret: SECRET,
+      today: MONDAY,
+      send,
+      push: (target, payload) => {
+        pushes.push({ endpoint: target.endpoint, payload: JSON.parse(payload) });
+        if (target.endpoint.includes("bitti")) {
+          return Promise.reject(Object.assign(new Error("Gone"), { statusCode: 410 }));
+        }
+        return Promise.resolve({ statusCode: 201 });
+      },
+      userIds: [ids.user],
+    });
+    expect(mine()).toHaveLength(3);
+    expect(stats.pushed).toBe(3);
+    // İlk bildirimde biten abonelik silinir; sonrakiler yalnızca canlı cihaza.
+    const count = (name: string) => pushes.filter((p) => p.endpoint.includes(name)).length;
+    expect([count("canli"), count("bitti")]).toEqual([3, 1]);
+    expect(pushes.find((p) => p.endpoint.includes("canli"))?.payload).toEqual({
+      title: "Katılmayı unutma",
+      body: `"basladi" başladı: katılmayı unutma`,
+      url: `/kampanyalarim/${ids.started}`,
+      tag: "join",
+    });
+    const left = await prisma.pushSubscription.findMany({ where: { userId: ids.user } });
+    expect(left.map((d) => d.endpoint)).toEqual([
+      `https://fcm.googleapis.com/fcm/send/canli-${run}`,
+    ]);
+    expect(left[0]?.lastSentAt).not.toBeNull();
+    await prisma.pushSubscription.deleteMany({ where: { userId: ids.user } });
+  });
+
   it("gönderim hatası kaydedilmez, ertesi çalıştırmada yeniden denenir", async () => {
     const failing = () => Promise.reject(new Error("SMTP yok"));
     vi.spyOn(console, "error").mockImplementation(() => {});

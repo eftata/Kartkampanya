@@ -52,12 +52,25 @@ describe.skipIf(!process.env.DATABASE_URL)("KVKK: rıza, veri kopyası, silme (v
   });
 
   it("veri kopyası kullanıcının kayıtlarını okunur adlarla içerir, sırları içermez", async () => {
+    await prisma.pushSubscription.create({
+      data: {
+        userId,
+        endpoint: `https://fcm.googleapis.com/fcm/send/gizli-uc-${run}`,
+        p256dh: "p".repeat(87),
+        auth: `gizli-anahtar-${run}`,
+      },
+    });
     const data = await exportUserData(userId);
     expect(data.account.email).toBe(email);
+    expect(data.pushDevices).toEqual([
+      expect.objectContaining({ service: "fcm.googleapis.com", lastSentAt: null }),
+    ]);
     expect(data.consents.map((c) => c.kind)).toContain("kvkk_aydinlatma");
     expect(data.account.activeSessions).toBe(1);
     const text = JSON.stringify(data);
     expect(text).not.toContain(`gizli-${run}`); // oturum anahtarı
+    expect(text).not.toContain(`gizli-uc-${run}`); // push adresi
+    expect(text).not.toContain(`gizli-anahtar-${run}`);
     if (data.cards.length) expect(data.cards[0]).toMatchObject({ nickname: "Maaş kartım" });
     if (data.spendProfile.length) expect(data.spendProfile[0]?.monthlyKurus).toBe(123_400);
   });

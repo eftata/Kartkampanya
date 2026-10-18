@@ -35,6 +35,7 @@ model User {
   transactions    Transaction[]
   plans           MonthlyPlan[]
   notifications   NotificationLog[]
+  pushDevices     PushSubscription[]
 }
 
 enum Role {
@@ -499,4 +500,20 @@ model Transaction {
 enum TransactionSource {
   MANUAL
   STATEMENT // Faz 2: ekstre PDF'inden
+}
+
+// Web push aboneliği (Faz 2; ADR 0031): tarayıcı/cihaz başına bir kayıt. `endpoint` push servisinin
+// adresi (izin listesindeki servisler), anahtarlar RFC 8291 şifrelemesi için. Servis 404/410
+// dönerse kayıt silinir. Kullanıcıyla silinir.
+model PushSubscription {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint   String    @unique
+  p256dh     String
+  auth       String
+  createdAt  DateTime  @default(now())
+  lastSentAt DateTime?
+
+  @@index([userId])
 }

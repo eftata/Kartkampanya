@@ -5,11 +5,13 @@ import { Suspense } from "react";
 import { DeleteAccountForm } from "@/components/delete-account-form";
 import { MarketingConsentToggle } from "@/components/marketing-consent-toggle";
 import { NotificationPrefsForm } from "@/components/notification-prefs-form";
+import { PushToggle } from "@/components/push-toggle";
 import { SpendProfileForm } from "@/components/spend-profile-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth/session";
 import { getConsentStatus } from "@/lib/consent";
 import { getNotificationPrefs } from "@/lib/notifications/prefs";
+import { pushConfig } from "@/lib/push";
 import { getSpendCategories, getSpendProfile } from "@/lib/spend-profile";
 
 export const metadata: Metadata = { title: "Profilim" };
@@ -43,10 +45,14 @@ async function Profile() {
       <div className="space-y-6">
         <Card id="bildirimler" className="h-fit">
           <CardHeader>
-            <CardTitle>E-posta bildirimleri</CardTitle>
+            <CardTitle>Bildirimler</CardTitle>
+            <CardDescription>
+              E-postayla; açtığın cihazlara anlık bildirim olarak da.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <NotificationPrefsForm initial={prefs} />
+            <PushToggle publicKey={pushConfig()?.publicKey ?? null} />
           </CardContent>
         </Card>
         <Card className="h-fit">
