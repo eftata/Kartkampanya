@@ -14,6 +14,18 @@ en çok kazanacağını gösteren aylık plan al.
 - Docker + Docker Compose
 - Python 3.12 ve [uv](https://docs.astral.sh/uv/) (motor için; `uv python install 3.12`)
 
+## Hızlı başlangıç (tek komut)
+
+```bash
+git clone https://github.com/eftata/Kartkampanya.git && cd Kartkampanya
+./scripts/local-up.sh
+```
+
+Betik araçları denetler, bağımlılıkları kurar, `.env`'yi oluşturup yerel anahtarları üretir,
+Docker'da PostgreSQL + Redis + Mailpit'i açar, migration ve seed'i uygular, motoru ve web'i başlatır.
+Uygulama http://localhost:3000, giriş e-postaları http://localhost:8025. Tekrar çalıştırmak
+güvenlidir (dolu anahtarlara dokunmaz). Windows'ta WSL içinde çalıştır.
+
 ## Yerel kurulum
 
 ```bash
