@@ -261,6 +261,10 @@ campaignPath` (`/kampanyalar/<slug>-<id>`, id cuid → son tireden sonrası); fa
 - Ay sonu raporu (ADR 0029): saf `lib/month-report.ts` (kampanya sonucu bitiş ayına), veri
   `lib/month-report-data.ts` (kapanan ayda `realizedKurus` yazar), sayfa `/plan/rapor?ay=`, API
   `GET /api/me/report`, e-posta `MONTHLY_REPORT` (ayın 1'i, `?monthly=1`).
+- Tek alışveriş (ADR 0030): saf `lib/purchase-advisor.ts` (kart başına marjinal kazanç; katılım
+  gereken ama katılınmamış kampanya `ifJoined`), veri `lib/purchase-advice.ts` (hiçbir şey
+  kaydetmez), sayfa `/hesapla` (GET form, `?tutar=&kategori=&marka=&tarih=`), API
+  `POST /api/me/purchase-advice`.
 
 ## KVKK — ayrıntı: docs/adr/0019-kvkk.md
 

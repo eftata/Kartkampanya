@@ -18,4 +18,7 @@ export const NON_INDEXED_PATHS = [
   "/onay",
   "/giris",
   "/abonelik",
+  "/harcamalar",
+  "/hesapla",
+  "/geri-bildirim",
 ] as const;

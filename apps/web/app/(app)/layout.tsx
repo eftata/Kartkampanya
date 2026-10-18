@@ -7,6 +7,7 @@ import { UserMenu } from "@/components/user-menu";
 
 const items = [
   { href: "/plan", label: "Bu ayın planı" },
+  { href: "/hesapla", label: "Hangi kart?" },
   { href: "/harcamalar", label: "Harcamalar" },
   { href: "/kampanyalarim", label: "Kampanyalar" },
   { href: "/kartlarim", label: "Kartlarım" },
