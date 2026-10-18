@@ -36,6 +36,8 @@ describe("NotificationPrefsInput", () => {
     expect(NotificationPrefsInput.safeParse({ ...all, endingSoon: "false" }).success).toBe(false);
     // Sonradan eklenen ay sonu raporu: göndermeyen eski istemcide açık kalır.
     expect(NotificationPrefsInput.parse(all).monthlyReport).toBe(true);
-    expect(NotificationPrefsInput.parse({ ...all, monthlyReport: false }).monthlyReport).toBe(false);
+    expect(NotificationPrefsInput.parse({ ...all, monthlyReport: false }).monthlyReport).toBe(
+      false,
+    );
   });
 });
