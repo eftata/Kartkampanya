@@ -36,6 +36,12 @@ async function TransactionsContent() {
 
   return (
     <div className="space-y-8">
+      <p className="text-sm">
+        Ekstren hazır mı?{" "}
+        <Link href="/harcamalar/ekstre" className="underline">
+          Ekstre PDF&apos;ini yükleyip harcamaları toplu ekle
+        </Link>
+      </p>
       <section aria-label="Yeni harcama" className="rounded-xl border p-4">
         <TransactionForm
           cards={cards.map((card) => ({ id: card.id, name: card.nickname || card.cardName }))}

@@ -25,6 +25,8 @@ export const RATE_LIMITS = {
   magicLinkIp: { limit: 20, windowSec: 15 * 60 },
   /** Auth.js e-posta gönderimi (doğrudan `/api/auth` çağrılarına karşı yedek sınır). */
   magicLinkSend: { limit: 8, windowSec: 60 * 60 },
+  /** Ekstre PDF'i ayrıştırma (motorda CPU işi; kullanıcı başına). */
+  statementParse: { limit: 20, windowSec: 60 * 60 },
   /** Geri bildirim gönderme (kullanıcı başına). */
   feedback: { limit: 10, windowSec: 60 * 60 },
   /** Planı zorla yeniden hesaplatma (motor maliyeti). */

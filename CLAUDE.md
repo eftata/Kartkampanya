@@ -253,6 +253,11 @@ campaignPath` (`/kampanyalar/<slug>-<id>`, id cuid → son tireden sonrası); fa
   harcamaları okur, bu ay harcama varsa `buildPlanRequest({ spent })` kalan bütçe moduna geçer.
 - e2e'de güncel ay kampanyası açan testler program/kategori çakıştırmasın (plan: Bonus/World,
   takip: Maximum + restoran).
+- Ekstre içe aktarma (ADR 0028): motor `engine/statements/` (`POST /statements/parse`, durumsuz;
+  bankaya özel ayrıştırıcı `parsers/` + `@register`, yalnızca gerçek anonimleştirilmiş ekstreyle),
+  web `lib/statements.ts`, `lib/statement-match.ts`, `/harcamalar/ekstre`, API
+  `/api/me/statements/{parse,import}`. PDF, metin, açıklama ve parola saklanmaz/günlüğe yazılmaz.
+  Test PDF'leri SENTETİK (`tests/pdf_helper.py`, `e2e/pdf.ts`).
 
 ## KVKK — ayrıntı: docs/adr/0019-kvkk.md
 

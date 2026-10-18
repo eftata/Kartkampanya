@@ -162,7 +162,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 ### Faz 2 — Takip (Sprint 7–12)
 
 - [x] Manuel harcama girişi + eşik ilerleme çubuğu + kalan bütçeyle yeniden planlama — `/harcamalar` (kart, ana kategori, isteğe bağlı marka, tutar, tarih; son 90 gün, ileri tarih yok; bu ayın listesi ve kategori başına plan/harcanan çubukları), API `GET/POST /api/me/transactions`, `DELETE /api/me/transactions/{id}`; plan sayfasında "Kampanya ilerlemen" (kural başına çubuk: kalan tutar/adet, kazanılan kademe ve tahmini ödül, üst limit); bu ay harcama varsa plan ayın kalanı için kurulur (bütçe ve kart limitinden harcanan düşer, pencere bugünden, kazanılan kural çıkar, tekrarsız kuralın eşiği kalan tutara iner, üst limitten kazanılan düşer); ADR 0027. Not: Kapı 1 (beta ölçümü) beklenmeden başlandı
-- [ ] Ekstre PDF yükleme → işlem çıkarma (banka başına ayrıştırıcı)
+- [ ] Ekstre PDF yükleme → işlem çıkarma (banka başına ayrıştırıcı) — **altyapı ve genel ayrıştırıcı tamam**: `/harcamalar/ekstre` (kart + PDF ≤ 4 MB + gerekirse parola) → motor `POST /statements/parse` (pypdf, durumsuz; ödeme/iade/toplam satırları atlanır, kart numarası açıklamadan silinir, taksit işaretlenir) → onay ekranı (marka/kategori önerisi, mükerrer ve 90 gün dışı satırlar seçili gelmez) → `Transaction (source = STATEMENT)`; PDF, metin, açıklama ve parola saklanmaz; ADR 0028. **Bekleyen:** banka başına ayrıştırıcılar gerçek (anonimleştirilmiş) ekstre örnekleri gerektirir
 - [ ] Ay sonu raporu: kazanılan / kaçırılan
 - [ ] Tek alışveriş hesaplayıcı ("4.000 TL telefon, hangi kart?")
 - [ ] PWA + web push
