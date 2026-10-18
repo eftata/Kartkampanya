@@ -43,6 +43,7 @@ test("yeni kullanıcı kartlarını ekler, düzeltir ve plana geçer", async ({ 
   await page.getByRole("button", { name: "Başka banka seç" }).click();
 
   // Kaldır ve yenile: kalıcı
+  page.once("dialog", (dialog) => void dialog.accept());
   await page.getByRole("button", { name: "Axess kartını kaldır" }).click();
   await expect(list.getByRole("listitem")).toHaveCount(1);
   await page.reload();

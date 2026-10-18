@@ -7,3 +7,4 @@ export * from "./notifications";
 export * from "./plan";
 export * from "./rates";
 export * from "./spend";
+export * from "./transactions";

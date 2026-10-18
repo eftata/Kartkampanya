@@ -32,6 +32,7 @@ model User {
   campaignStatus  UserCampaignStatus[]
   feedback        Feedback[]
   activityDays    UserActivityDay[]
+  transactions    Transaction[]
   plans           MonthlyPlan[]
   notifications   NotificationLog[]
 }
@@ -119,22 +120,24 @@ model EarnRate {
 }
 
 model Category {
-  id        String         @id @default(cuid())
-  slug      String         @unique // market, akaryakit, e-ticaret
-  name      String
-  parentId  String?
-  parent    Category?      @relation("CategoryTree", fields: [parentId], references: [id])
-  children  Category[]     @relation("CategoryTree")
-  merchants Merchant[]
-  earnRates EarnRate[]
-  spend     SpendProfile[]
+  id           String         @id @default(cuid())
+  slug         String         @unique // market, akaryakit, e-ticaret
+  name         String
+  parentId     String?
+  parent       Category?      @relation("CategoryTree", fields: [parentId], references: [id])
+  children     Category[]     @relation("CategoryTree")
+  merchants    Merchant[]
+  earnRates    EarnRate[]
+  spend        SpendProfile[]
+  transactions Transaction[]
 }
 
 model Merchant {
-  id         String   @id @default(cuid())
-  name       String   @unique // Migros, Opet, Trendyol
-  categoryId String
-  category   Category @relation(fields: [categoryId], references: [id])
+  id           String        @id @default(cuid())
+  name         String        @unique // Migros, Opet, Trendyol
+  categoryId   String
+  category     Category      @relation(fields: [categoryId], references: [id])
+  transactions Transaction[]
 
   @@index([categoryId])
 }
@@ -142,15 +145,16 @@ model Merchant {
 // --- Kullanıcı verisi (Sprint 1). Hesap silinince birlikte silinir (KVKK). ---
 
 model UserCard {
-  id            String      @id @default(cuid())
+  id            String        @id @default(cuid())
   userId        String
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   cardProductId String
-  cardProduct   CardProduct @relation(fields: [cardProductId], references: [id], onDelete: Restrict)
+  cardProduct   CardProduct   @relation(fields: [cardProductId], references: [id], onDelete: Restrict)
   nickname      String?
   limitKurus    Int?
   statementDay  Int? // hesap kesim günü 1-31 (uygulama katmanında doğrulanır)
-  createdAt     DateTime    @default(now())
+  createdAt     DateTime      @default(now())
+  transactions  Transaction[]
 
   @@index([userId])
 }
@@ -468,4 +472,30 @@ model UserActivityDay {
 
   @@id([userId, day])
   @@index([day])
+}
+
+/// Kullanıcının elle girdiği harcama (Faz 2; ADR 0027). Kampanya eşik ilerlemesi ve kalan bütçeyle
+/// yeniden planlama buradan hesaplanır. Kart kaldırılınca ya da kullanıcı silinince silinir.
+model Transaction {
+  id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userCardId  String
+  userCard    UserCard          @relation(fields: [userCardId], references: [id], onDelete: Cascade)
+  categoryId  String // ana kategori
+  category    Category          @relation(fields: [categoryId], references: [id])
+  merchantId  String?
+  merchant    Merchant?         @relation(fields: [merchantId], references: [id], onDelete: SetNull)
+  amountKurus Int
+  date        DateTime // takvim günü (UTC gece yarısı, Türkiye günü)
+  source      TransactionSource @default(MANUAL)
+  createdAt   DateTime          @default(now())
+
+  @@index([userId, date])
+  @@index([userCardId])
+}
+
+enum TransactionSource {
+  MANUAL
+  STATEMENT // Faz 2: ekstre PDF'inden
 }

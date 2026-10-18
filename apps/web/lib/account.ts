@@ -96,6 +96,18 @@ export async function exportUserData(userId: string, now = new Date()) {
         select: { kind: true, key: true, sentAt: true },
       },
       activityDays: { orderBy: { day: "asc" }, select: { day: true } },
+      transactions: {
+        orderBy: [{ date: "asc" }, { createdAt: "asc" }],
+        select: {
+          amountKurus: true,
+          date: true,
+          source: true,
+          createdAt: true,
+          category: { select: { name: true } },
+          merchant: { select: { name: true } },
+          userCard: { select: { nickname: true, cardProduct: { select: { name: true } } } },
+        },
+      },
       feedback: {
         orderBy: { createdAt: "asc" },
         select: {
@@ -167,6 +179,15 @@ export async function exportUserData(userId: string, now = new Date()) {
     sentNotifications: user.notifications,
     feedback: user.feedback,
     activeDays: user.activityDays.map((item) => item.day),
+    transactions: user.transactions.map((item) => ({
+      date: item.date.toISOString().slice(0, 10),
+      card: item.userCard.nickname || item.userCard.cardProduct.name,
+      category: item.category.name,
+      merchant: item.merchant?.name ?? null,
+      amountKurus: item.amountKurus,
+      source: item.source,
+      enteredAt: item.createdAt,
+    })),
     adminActions: user.adminAuditLogs,
   };
 }

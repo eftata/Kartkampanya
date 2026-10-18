@@ -8,12 +8,16 @@
  * - Ay penceresi: kampanya ayın yalnızca bir kısmında geçerliyse, aylık harcamanın o pencereye düşen
  *   payı kadar eşik büyütülür, oransal ödül küçültülür (`threshold × ay günü / pencere günü`).
  * - Marka kuralı yalnızca kullanıcı o markayı harcama profilinde seçtiyse kategorisine bağlanır.
+ * - Bu ay harcama girildiyse (Faz 2, ADR 0027) plan ayın kalanı için kurulur: bütçe profilden
+ *   harcananı düşer, kart limiti harcananı düşer, pencere bugünden başlar; kazanılmış kural plandan
+ *   çıkar, tekrarsız kuralın eşiği kalan tutar/adede iner, üst limitten kazanılan düşer.
  */
 import { createHash } from "node:crypto";
 
 import type { PlanRequestInput, RewardType, ThresholdType } from "@kartplan/shared";
 
 import { daysBetween } from "@/lib/campaign-match";
+import type { RuleProgress } from "@/lib/campaign-progress";
 
 export type PlanCardInput = {
   id: string; // UserCard.id
@@ -61,6 +65,17 @@ export type PlanSource = {
   rootOf: Map<string, string>;
   merchantCategory: Map<string, string>;
   maxCards?: number;
+  /** Bu ay girilen harcamalar varsa: kalan bütçeyle yeniden planlama. */
+  spent?: PlanSpent;
+};
+
+export type PlanSpent = {
+  /** Ana kategori → bu ay harcanan (kuruş). */
+  byCategory: Map<string, number>;
+  /** UserCard.id → bu ay harcanan (kuruş). */
+  byCard: Map<string, number>;
+  /** Kural id'si → ilerleme (kampanya penceresindeki harcamalardan). */
+  progress: Map<string, RuleProgress>;
 };
 
 export function monthBounds(month: string): { first: string; last: string; days: number } {
@@ -84,6 +99,7 @@ const DEFAULT_MAX_CARDS = 3;
 
 export function buildPlanRequest(source: PlanSource): PlanRequestInput {
   const root = (id: string) => source.rootOf.get(id) ?? id;
+  const spent = source.spent;
   const budget = new Map<string, number>();
   const preferred = new Map<string, Set<string>>();
   for (const item of source.spend) {
@@ -94,16 +110,30 @@ export function buildPlanRequest(source: PlanSource): PlanRequestInput {
     preferred.set(category, merchants);
   }
 
+  if (spent) {
+    for (const [category, amount] of budget) {
+      budget.set(category, Math.max(0, amount - (spent.byCategory.get(category) ?? 0)));
+    }
+  }
+
   const cards = source.cards.map((card) => {
     const rates: Record<string, number> = { "*": card.baseRateBps };
     for (const rate of card.earnRates) {
       const category = root(rate.categoryId);
       rates[category] = Math.max(rates[category] ?? 0, rate.rateBps);
     }
-    return { id: card.id, limit: card.limitKurus, baseRateBps: rates };
+    const limit =
+      spent && card.limitKurus !== null
+        ? Math.max(0, card.limitKurus - (spent.byCard.get(card.id) ?? 0))
+        : card.limitKurus;
+    return { id: card.id, limit, baseRateBps: rates };
   });
 
-  const { first, last, days } = monthBounds(source.month);
+  const bounds = monthBounds(source.month);
+  const { last } = bounds;
+  // Kalan bütçe modunda pencere ve ay bugünden başlar (bütçe ayın kalanına yayılır).
+  const first = spent && source.today > bounds.first ? source.today : bounds.first;
+  const days = daysBetween(first, last);
   const campaigns: PlanRequestInput["campaigns"] = [];
   for (const campaign of source.campaigns) {
     const from = campaign.startsAt > first ? campaign.startsAt : first;
@@ -129,6 +159,9 @@ export function buildPlanRequest(source: PlanSource): PlanRequestInput {
 
     for (const rule of campaign.rules) {
       if (rule.rewardType === "INSTALLMENT") continue;
+      const progress = spent?.progress.get(rule.id);
+      if (progress?.complete) continue; // ödülü alındı ya da üst limit doldu
+      const adjusted = progress ? remainingRule(rule, progress) : rule;
       const everything = rule.categoryIds.length === 0 && rule.merchantIds.length === 0;
       const categories = new Set<string>();
       for (const id of rule.categoryIds) categories.add(root(id));
@@ -145,13 +178,13 @@ export function buildPlanRequest(source: PlanSource): PlanRequestInput {
         cards: cardIds,
         categories: everything ? [] : inBudget.sort(),
         thresholdType: rule.thresholdType,
-        threshold: scale(rule.thresholdKurus ?? 0),
-        txnCount: rule.txnCount,
+        threshold: scale(adjusted.thresholdKurus ?? 0),
+        txnCount: adjusted.txnCount,
         tierRepeat: rule.tierRepeat,
         reward: rule.rewardKurus ?? 0,
         rewardBps:
           rule.rewardBps === null ? null : Math.floor((rule.rewardBps * windowDays) / days),
-        cap: rule.capKurus,
+        cap: adjusted.capKurus,
         eligible,
         group,
       });
@@ -168,6 +201,21 @@ export function buildPlanRequest(source: PlanSource): PlanRequestInput {
       timeLimitMs: 2000,
     },
   };
+}
+
+/**
+ * Kısmen ilerlemiş kuralın ayın kalanı için hali: tekrarsız kuralda eşik kalan tutara/adede iner;
+ * tekrarlanan kuralda eşik aynı kalır (kısmi kademe yok sayılır, temkinli); üst limitten kazanılan
+ * düşer.
+ */
+function remainingRule(rule: PlanRuleInput, progress: RuleProgress): PlanRuleInput {
+  const capKurus =
+    rule.capKurus === null ? null : Math.max(0, rule.capKurus - progress.earnedKurus);
+  if (rule.tierRepeat || progress.toNext === null) return { ...rule, capKurus };
+  if (progress.kind === "amount") return { ...rule, thresholdKurus: progress.toNext, capKurus };
+  if (progress.kind === "count")
+    return { ...rule, txnCount: Math.max(1, progress.toNext), capKurus };
+  return { ...rule, capKurus };
 }
 
 /** Nesne anahtarları sıralı JSON: aynı içerik her zaman aynı metni verir. Dizi sırası korunur. */

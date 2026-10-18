@@ -19,7 +19,8 @@ export type AnalyticsEvent =
   | "spend_profile_saved"
   | "plan_viewed"
   | "campaign_joined"
-  | "feedback_sent";
+  | "feedback_sent"
+  | "transaction_added";
 
 /** Yalnızca sayı, mantıksal değer ya da sabit etiket (ör. ay, plan durumu). */
 export type AnalyticsProperties = Record<string, number | boolean | string>;

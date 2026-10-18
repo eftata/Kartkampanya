@@ -59,6 +59,7 @@ test("Kartlarım: kartı düzenler, değerleri temizler, ekler ve kaldırır", a
   await page.getByRole("button", { name: "Kartı ekle" }).click();
   await expect(list.getByRole("listitem")).toHaveCount(2);
 
+  page.once("dialog", (dialog) => void dialog.accept());
   await page.getByRole("button", { name: "Worldcard kartını kaldır" }).click();
   await expect(list.getByRole("listitem")).toHaveCount(1);
 

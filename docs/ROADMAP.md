@@ -161,7 +161,7 @@ Her sprint bir kabul kriteriyle biter; kriter sağlanmadan sonraki sprinte geçi
 
 ### Faz 2 — Takip (Sprint 7–12)
 
-- [ ] Manuel harcama girişi + eşik ilerleme çubuğu + kalan bütçeyle yeniden planlama
+- [x] Manuel harcama girişi + eşik ilerleme çubuğu + kalan bütçeyle yeniden planlama — `/harcamalar` (kart, ana kategori, isteğe bağlı marka, tutar, tarih; son 90 gün, ileri tarih yok; bu ayın listesi ve kategori başına plan/harcanan çubukları), API `GET/POST /api/me/transactions`, `DELETE /api/me/transactions/{id}`; plan sayfasında "Kampanya ilerlemen" (kural başına çubuk: kalan tutar/adet, kazanılan kademe ve tahmini ödül, üst limit); bu ay harcama varsa plan ayın kalanı için kurulur (bütçe ve kart limitinden harcanan düşer, pencere bugünden, kazanılan kural çıkar, tekrarsız kuralın eşiği kalan tutara iner, üst limitten kazanılan düşer); ADR 0027. Not: Kapı 1 (beta ölçümü) beklenmeden başlandı
 - [ ] Ekstre PDF yükleme → işlem çıkarma (banka başına ayrıştırıcı)
 - [ ] Ay sonu raporu: kazanılan / kaçırılan
 - [ ] Tek alışveriş hesaplayıcı ("4.000 TL telefon, hangi kart?")
@@ -533,7 +533,9 @@ model MonthlyPlan {
 }
 ```
 
-Faz 2'de `Transaction` (kullanıcı, kart, tutar, tarih, kategori, kaynak) eklenir; MVP'de yok.
+Faz 2 (ADR 0027): `Transaction` — kullanıcı, kart (`UserCard`, kart kaldırılınca silinir), ana
+kategori, isteğe bağlı marka, `amountKurus`, `date` (Türkiye günü), `source` (`MANUAL` |
+`STATEMENT`). Kampanya ilerlemesi buradan hesaplanır (saklanmaz; `progressKurus` kullanılmıyor).
 
 ## API sözleşmesi
 

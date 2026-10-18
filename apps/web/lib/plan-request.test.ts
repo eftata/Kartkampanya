@@ -2,7 +2,8 @@ import { PlanRequest } from "@kartplan/shared";
 import { describe, expect, it } from "vitest";
 
 import { buildPlanRequest, monthBounds, planInputHash } from "./plan-request";
-import type { PlanCampaignInput, PlanRuleInput, PlanSource } from "./plan-request";
+import type { RuleProgress } from "./campaign-progress";
+import type { PlanCampaignInput, PlanRuleInput, PlanSource, PlanSpent } from "./plan-request";
 
 const rule = (overrides: Partial<PlanRuleInput> = {}): PlanRuleInput => ({
   id: "r1",
@@ -200,4 +201,71 @@ describe("planInputHash", () => {
     expect(planInputHash(changed)).not.toBe(planInputHash(request));
     expect(planInputHash(request)).toMatch(/^[0-9a-f]{64}$/);
   });
+});
+
+describe("kalan bütçeyle yeniden planlama (Faz 2)", () => {
+  const progress = (patch: Partial<RuleProgress> = {}): RuleProgress => ({
+    kind: "amount",
+    current: 100_000,
+    target: 300_000,
+    tiers: 0,
+    earnedKurus: 0,
+    toNext: 200_000,
+    complete: false,
+    matched: 1,
+    ...patch,
+  });
+  const spent = (patch: Partial<PlanSpent> = {}): PlanSpent => ({
+    byCategory: new Map([["market", 150_000]]),
+    byCard: new Map([["uc2", 400_000]]),
+    progress: new Map([["r1", progress()]]),
+    ...patch,
+  });
+
+  it("bütçe ve limit harcananı düşer; pencere bugünden başlar; eşik kalan tutara iner", () => {
+    // 16 Kasım: ayın kalanı 15 gün, kampanya penceresi de 15 gün → ölçek 1.
+    const request = buildPlanRequest(source({ today: "2026-11-16", spent: spent() }));
+    expect(PlanRequest.safeParse(request).success).toBe(true);
+    expect(request.budget).toEqual([
+      { category: "market", amount: 250_000 },
+      { category: "akaryakit", amount: 200_000 },
+    ]);
+    expect(request.cards[1]).toMatchObject({ id: "uc2", limit: 600_000 });
+    expect(request.campaigns[0]).toMatchObject({ id: "r1", threshold: 200_000 });
+  });
+
+  it("kampanya ayın kalanından kısa sürerse kalan eşik ölçeklenir", () => {
+    const request = buildPlanRequest(
+      source({
+        today: "2026-11-16",
+        campaigns: [campaign({ endsAt: "2026-11-20" })], // 5 gün / ayın kalanı 15 gün
+        spent: spent(),
+      }),
+    );
+    expect(request.campaigns[0]?.threshold).toBe(600_000); // 200.000 × 15/5
+  });
+
+  it("kazanılmış kural plandan çıkar; tekrarlanan kuralda üst limitten kazanılan düşer", () => {
+    expect(
+      buildPlanRequest(
+        source({
+          spent: spent({ progress: new Map([["r1", progress({ tiers: 1, complete: true })]]) }),
+        }),
+      ).campaigns,
+    ).toEqual([]);
+    const request = buildPlanRequest(
+      source({
+        campaigns: [campaign({ rules: [rule({ tierRepeat: true, capKurus: 30_000 })] })],
+        spent: spent({
+          progress: new Map([["r1", progress({ tiers: 1, earnedKurus: 10_000, toNext: 200_000 })]]),
+        }),
+      }),
+    );
+    expect(request.campaigns[0]).toMatchObject({ threshold: 300_000, cap: 20_000 });
+  });
+
+  it("harcama yokken plan değişmez (özet aynı)", () =>
+    expect(planInputHash(buildPlanRequest(source()))).toBe(
+      planInputHash(buildPlanRequest(source({ spent: undefined }))),
+    ));
 });

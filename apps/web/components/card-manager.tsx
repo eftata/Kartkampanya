@@ -151,6 +151,9 @@ function UserCardItem({
   }
 
   function remove() {
+    // Kartın harcama kayıtları da silinir (ADR 0027).
+    const message = `${card.cardName} kartını kaldırırsan bu karta girdiğin harcamalar da silinir. Devam edilsin mi?`;
+    if (!window.confirm(message)) return;
     setError(null);
     startTransition(async () => {
       const result = await removeCardAction(card.id);

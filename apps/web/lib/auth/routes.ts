@@ -8,6 +8,7 @@ const PROTECTED_PREFIXES = [
   "/admin",
   "/onay",
   "/geri-bildirim",
+  "/harcamalar",
 ] as const;
 
 export function isProtectedPath(pathname: string): boolean {

@@ -2,7 +2,9 @@ import { formatKurus } from "@kartplan/shared";
 import Link from "next/link";
 
 import { JoinToggle } from "@/components/join-toggle";
-import type { PlanCampaignRef, PlanView as PlanViewData } from "@/lib/plan";
+import { ProgressBar } from "@/components/progress-bar";
+import type { RuleProgress } from "@/lib/campaign-progress";
+import type { PlanCampaignRef, PlanTracking, PlanView as PlanViewData } from "@/lib/plan";
 
 function Tile({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
@@ -26,6 +28,87 @@ function CampaignLinks({ refs }: { refs: PlanCampaignRef[] }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+function progressText(rule: RuleProgress): string {
+  const done = rule.complete
+    ? `tamamlandı${rule.earnedKurus > 0 ? ` · ~${formatKurus(rule.earnedKurus)} kazandın` : ""}`
+    : null;
+  if (rule.kind === "count") {
+    const base = `${rule.current} / ${rule.target * (rule.tiers + (rule.complete ? 0 : 1))} işlem`;
+    return done ? `${base} · ${done}` : `${base} · ${rule.toNext} işlem kaldı`;
+  }
+  if (rule.kind === "single") {
+    const base =
+      rule.tiers > 0
+        ? `${rule.tiers} uygun alışveriş`
+        : `en büyük tek harcaman ${formatKurus(rule.current)}`;
+    return done
+      ? `${base} · ${done}`
+      : `${base} · tek seferde ${formatKurus(rule.target)} ve üzeri gerekiyor`;
+  }
+  const goal = rule.target * (rule.tiers + (rule.complete ? 0 : 1));
+  const base =
+    rule.target > 0
+      ? `${formatKurus(rule.current)} / ${formatKurus(goal)}`
+      : formatKurus(rule.current);
+  if (done) return `${base} · ${done}`;
+  const earned = rule.earnedKurus > 0 ? ` · şimdiye kadar ~${formatKurus(rule.earnedKurus)}` : "";
+  return rule.toNext !== null ? `${base} · ${formatKurus(rule.toNext)} kaldı${earned}` : base;
+}
+
+function progressValue(rule: RuleProgress): number {
+  if (rule.complete) return 1;
+  if (rule.kind === "single") return rule.target > 0 ? rule.current / rule.target : 0;
+  const goal = rule.target * (rule.tiers + 1);
+  return goal > 0 ? rule.current / goal : 0;
+}
+
+function TrackingSection({ tracking }: { tracking: PlanTracking }) {
+  if (tracking.campaigns.length === 0 && !tracking.remainingMode) return null;
+  return (
+    <section aria-label="Kampanya ilerlemen" className="space-y-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="font-medium">Kampanya ilerlemen</h2>
+        <Link href="/harcamalar" className="text-sm underline">
+          Harcama ekle
+        </Link>
+      </div>
+      {tracking.remainingMode && (
+        <p className="text-muted-foreground text-sm">
+          Bu ay {formatKurus(tracking.spentKurus)} harcama girdin
+          {tracking.earnedKurus > 0 &&
+            `, kampanyalardan ~${formatKurus(tracking.earnedKurus)} kazandın`}
+          . Aşağıdaki plan ayın kalanı için.
+        </p>
+      )}
+      <ul className="space-y-4">
+        {tracking.campaigns.map((item) => (
+          <li key={item.campaign.id} className="space-y-2">
+            <Link
+              href={`/kampanyalarim/${item.campaign.id}`}
+              className="text-sm font-medium underline-offset-4 hover:underline"
+            >
+              {item.campaign.title}
+            </Link>
+            {item.rules.map((rule) => (
+              <div key={rule.ruleId} className="space-y-1">
+                <ProgressBar
+                  label={`${item.campaign.title} ilerlemesi`}
+                  value={progressValue(rule)}
+                  tone={rule.complete ? "done" : "default"}
+                />
+                <p className="text-muted-foreground text-xs">{progressText(rule)}</p>
+              </div>
+            ))}
+          </li>
+        ))}
+      </ul>
+      <p className="text-muted-foreground text-xs">
+        İlerleme yalnızca buraya girdiğin harcamalardan hesaplanır; bankanın kayıtları esastır.
+      </p>
+    </section>
   );
 }
 
@@ -69,6 +152,8 @@ export function PlanView({ view }: { view: PlanViewData }) {
           value={gain > 0 ? `+${formatKurus(gain)}` : formatKurus(0)}
         />
       </div>
+
+      <TrackingSection tracking={view.tracking} />
 
       {toJoin.length > 0 && (
         <section

@@ -245,6 +245,15 @@ campaignPath` (`/kampanyalar/<slug>-<id>`, id cuid → son tireden sonrası); fa
 - Mükerrer adayı `findSimilarCampaigns`, kampanya hata bildirimi `Feedback.campaignId`
   (`/geri-bildirim?kampanya=`), panoda `getDataQuality` (bildirimli + kaynakta kaybolan).
 
+## Harcama takibi (Faz 2) — ayrıntı: docs/adr/0027-transactions.md
+
+- `Transaction` (elle giriş; kart kaldırılınca ve hesapla silinir). İş mantığı `lib/transactions.ts`,
+  eylemler `lib/transaction-actions.ts`, sayfa `/harcamalar`, API `/api/me/transactions`.
+- İlerleme saf `lib/campaign-progress.ts` (`ruleProgress`), saklanmaz. Plan: `getMonthlyPlan`
+  harcamaları okur, bu ay harcama varsa `buildPlanRequest({ spent })` kalan bütçe moduna geçer.
+- e2e'de güncel ay kampanyası açan testler program/kategori çakıştırmasın (plan: Bonus/World,
+  takip: Maximum + restoran).
+
 ## KVKK — ayrıntı: docs/adr/0019-kvkk.md
 
 - Metinler ve sürümler `apps/web/lib/legal.ts` (taslak; metin değişince sürümü artır → herkes yeniden
