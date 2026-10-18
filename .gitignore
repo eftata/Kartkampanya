@@ -32,3 +32,6 @@ test-results/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Yerel Redis anlık görüntüsü
+dump.rdb
