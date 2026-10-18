@@ -27,20 +27,23 @@ describe.skipIf(!process.env.DATABASE_URL)("bildirim tercihleri (veritabanı)", 
       joinReminder: true,
       endingSoon: true,
       weeklySummary: true,
+      monthlyReport: true,
     });
     await saveNotificationPrefs(userId, {
       joinReminder: true,
       endingSoon: false,
       weeklySummary: true,
+      monthlyReport: true,
     });
     await unsubscribe(userId, "weeklySummary");
     expect(await getNotificationPrefs(userId)).toEqual({
       joinReminder: true,
       endingSoon: false,
       weeklySummary: false,
+      monthlyReport: true,
     });
     await unsubscribe(userId, "all");
-    expect(Object.values(await getNotificationPrefs(userId))).toEqual([false, false, false]);
+    expect(Object.values(await getNotificationPrefs(userId))).toEqual([false, false, false, false]);
   });
 
   it("olmayan kullanıcı için abonelik iptali false döner", async () => {

@@ -26,7 +26,12 @@ const campaign = (id: string, overrides: Partial<MyCampaignDto> = {}): MyCampaig
   ...overrides,
 });
 
-const allOn: NotificationPrefs = { joinReminder: true, endingSoon: true, weeklySummary: true };
+const allOn: NotificationPrefs = {
+  joinReminder: true,
+  endingSoon: true,
+  weeklySummary: true,
+  monthlyReport: true,
+};
 const pick = (campaigns: MyCampaignDto[], today: string, sent: string[] = [], prefs = allOn) =>
   pickNotifications({ campaigns, today, sent: new Set(sent), prefs });
 
@@ -82,10 +87,15 @@ describe("pickNotifications", () => {
   });
 
   it("kapalı tercih o türü göndermez", () => {
-    const off = { joinReminder: false, endingSoon: false, weeklySummary: false };
+    const off = {
+      joinReminder: false,
+      endingSoon: false,
+      weeklySummary: false,
+      monthlyReport: false,
+    };
     expect(
       pick([campaign("a", { joined: true, endsAt: "2026-11-24" })], "2026-11-23", [], off),
-    ).toEqual({ joinReminders: [], endingSoon: [], weekly: null });
+    ).toEqual({ joinReminders: [], endingSoon: [], weekly: null, monthly: null });
   });
 });
 
@@ -100,5 +110,25 @@ describe("tarih yardımcıları", () => {
   it("Pazartesi", () => {
     expect(isMonday("2026-11-23")).toBe(true);
     expect(isMonday("2026-11-22")).toBe(false);
+  });
+});
+
+describe("ay sonu raporu", () => {
+  const base = { campaigns: [], sent: new Set<string>(), prefs: allOn };
+  it("ayın 1'inde geçen ay için, bir kez", () => {
+    expect(pickNotifications({ ...base, today: "2026-12-01" }).monthly).toBe("2026-11");
+    expect(pickNotifications({ ...base, today: "2027-01-01" }).monthly).toBe("2026-12");
+    expect(pickNotifications({ ...base, today: "2026-12-02" }).monthly).toBeNull();
+    expect(
+      pickNotifications({ ...base, today: "2026-12-01", sent: new Set(["MONTHLY_REPORT:2026-11"]) })
+        .monthly,
+    ).toBeNull();
+    expect(
+      pickNotifications({ ...base, today: "2026-12-01", prefs: { ...allOn, monthlyReport: false } })
+        .monthly,
+    ).toBeNull();
+    expect(pickNotifications({ ...base, today: "2026-12-15", forceMonthly: true }).monthly).toBe(
+      "2026-11",
+    );
   });
 });

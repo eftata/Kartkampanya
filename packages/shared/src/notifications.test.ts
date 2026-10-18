@@ -8,6 +8,7 @@ describe("parseNotificationPrefs", () => {
       joinReminder: true,
       endingSoon: true,
       weeklySummary: true,
+      monthlyReport: true,
     });
     expect(parseNotificationPrefs({ weeklySummary: false })).toMatchObject({
       weeklySummary: false,
@@ -20,6 +21,7 @@ describe("parseNotificationPrefs", () => {
       joinReminder: true,
       endingSoon: true,
       weeklySummary: false,
+      monthlyReport: true,
     });
     expect(parseNotificationPrefs(null).endingSoon).toBe(true);
   });
@@ -32,5 +34,8 @@ describe("NotificationPrefsInput", () => {
     expect(NotificationPrefsInput.safeParse({ joinReminder: true }).success).toBe(false);
     expect(NotificationPrefsInput.safeParse({ ...all, marketing: true }).success).toBe(false);
     expect(NotificationPrefsInput.safeParse({ ...all, endingSoon: "false" }).success).toBe(false);
+    // Sonradan eklenen ay sonu raporu: göndermeyen eski istemcide açık kalır.
+    expect(NotificationPrefsInput.parse(all).monthlyReport).toBe(true);
+    expect(NotificationPrefsInput.parse({ ...all, monthlyReport: false }).monthlyReport).toBe(false);
   });
 });

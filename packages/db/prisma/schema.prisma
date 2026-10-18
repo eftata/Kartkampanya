@@ -408,6 +408,7 @@ enum NotificationKind {
   JOIN_REMINDER
   ENDING_SOON
   WEEKLY_SUMMARY
+  MONTHLY_REPORT // Faz 2: ay sonu raporu (anahtar: rapor ayı)
 }
 
 /// Web'deki zamanlanmış işlerin (Vercel Cron) çalışma kaydı: izleme panosu son çalışmayı ve

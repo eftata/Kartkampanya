@@ -163,3 +163,57 @@ export function weeklySummaryEmail(summary: WeeklySummary, links: Links): Email 
   );
   return { subject, ...body, unsubscribe: "weeklySummary" };
 }
+
+export type MonthlyReportSummary = {
+  month: string; // "2026-11"
+  monthLabel: string;
+  campaignEarnedKurus: number;
+  baseEarnedKurus: number;
+  earned: { id: string; title: string; earnedKurus: number }[];
+  missed: { id: string; title: string; rewardKurus: number; note: string }[];
+};
+
+export function monthlyReportEmail(summary: MonthlyReportSummary, links: Links): Email {
+  const earnedTotal = summary.campaignEarnedKurus + summary.baseEarnedKurus;
+  const missedTotal = summary.missed.reduce((sum, item) => sum + item.rewardKurus, 0);
+  const subject = `${summary.monthLabel} raporun: ~${formatKurus(earnedTotal)} kazandın`;
+  const totals =
+    `${summary.monthLabel} boyunca kampanyalardan ~${formatKurus(summary.campaignEarnedKurus)}, ` +
+    `kart puanından ~${formatKurus(summary.baseEarnedKurus)} kazandın` +
+    (missedTotal > 0 ? `; ~${formatKurus(missedTotal)} kaçırdın.` : ".");
+  const list = (items: { id: string; title: string; line: string }[]) => ({
+    html: `<ul style="padding-left:18px">${items
+      .map(
+        (item) =>
+          `<li style="margin-bottom:6px"><a href="${escapeHtml(campaignUrl(links, item.id))}">${escapeHtml(item.title)}</a> <span style="color:#555;font-size:13px">${escapeHtml(item.line)}</span></li>`,
+      )
+      .join("")}</ul>`,
+    text: items.map((item) => `• ${item.title} ${item.line}`).join("\n"),
+  });
+  const earned = list(
+    summary.earned
+      .slice(0, 5)
+      .map((item) => ({ ...item, line: `~${formatKurus(item.earnedKurus)}` })),
+  );
+  const missed = list(
+    summary.missed
+      .slice(0, 5)
+      .map((item) => ({ ...item, line: `~${formatKurus(item.rewardKurus)} · ${item.note}` })),
+  );
+  const report = `${links.base}/plan/rapor?ay=${summary.month}`;
+  const body = layout(
+    `${summary.monthLabel} raporun`,
+    `<p>${escapeHtml(totals)}</p>` +
+      (summary.earned.length ? `<p><strong>Kazandıkların</strong></p>${earned.html}` : "") +
+      (summary.missed.length ? `<p><strong>Kaçırdıkların</strong></p>${missed.html}` : "") +
+      `<p><a href="${escapeHtml(report)}">Raporun tamamı</a></p>` +
+      `<p style="color:#666;font-size:12px">Tutarlar girdiğin harcamalardan tahmindir; kesin tutarlar bankanın ekstresindedir.</p>`,
+    `${totals}` +
+      (summary.earned.length ? `\n\nKazandıkların:\n${earned.text}` : "") +
+      (summary.missed.length ? `\n\nKaçırdıkların:\n${missed.text}` : "") +
+      `\n\nRaporun tamamı: ${report}\nTutarlar girdiğin harcamalardan tahmindir.`,
+    "monthlyReport",
+    links,
+  );
+  return { subject, ...body, unsubscribe: "monthlyReport" };
+}

@@ -258,6 +258,9 @@ campaignPath` (`/kampanyalar/<slug>-<id>`, id cuid → son tireden sonrası); fa
   web `lib/statements.ts`, `lib/statement-match.ts`, `/harcamalar/ekstre`, API
   `/api/me/statements/{parse,import}`. PDF, metin, açıklama ve parola saklanmaz/günlüğe yazılmaz.
   Test PDF'leri SENTETİK (`tests/pdf_helper.py`, `e2e/pdf.ts`).
+- Ay sonu raporu (ADR 0029): saf `lib/month-report.ts` (kampanya sonucu bitiş ayına), veri
+  `lib/month-report-data.ts` (kapanan ayda `realizedKurus` yazar), sayfa `/plan/rapor?ay=`, API
+  `GET /api/me/report`, e-posta `MONTHLY_REPORT` (ayın 1'i, `?monthly=1`).
 
 ## KVKK — ayrıntı: docs/adr/0019-kvkk.md
 

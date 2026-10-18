@@ -13,6 +13,7 @@ export const UNSUBSCRIBE_TARGETS: readonly UnsubscribeTarget[] = [
   "joinReminder",
   "endingSoon",
   "weeklySummary",
+  "monthlyReport",
   "all",
 ];
 

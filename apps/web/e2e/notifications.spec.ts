@@ -101,6 +101,7 @@ test("bildirim tercihleri: Profilim ekranı ve API", async ({ page, request }) =
     joinReminder: true,
     endingSoon: true,
     weeklySummary: true,
+    monthlyReport: true,
   });
 
   await page.goto("/profil");

@@ -164,7 +164,46 @@ describe.skipIf(!process.env.DATABASE_URL)("bildirim işi (veritabanı)", () => 
     await unsubscribe(ids.user, "all");
     const stats = await runAt(MONDAY);
     expect(mine()).toEqual([]);
-    expect(stats.sent).toEqual({ JOIN_REMINDER: 0, ENDING_SOON: 0, WEEKLY_SUMMARY: 0 });
+    expect(stats.sent).toEqual({
+      JOIN_REMINDER: 0,
+      ENDING_SOON: 0,
+      WEEKLY_SUMMARY: 0,
+      MONTHLY_REPORT: 0,
+    });
+  });
+
+  it("ay sonu raporu: ayın 1'inde, geçen ay harcama girildiyse, bir kez", async () => {
+    const reports = () => mine().filter((mail) => mail.subject.includes("raporun"));
+    await runAt("2026-12-01");
+    expect(reports()).toEqual([]); // kasımda harcama yok
+
+    const card = await prisma.userCard.findFirstOrThrow({ where: { userId: ids.user } });
+    const spend = (day: string, amountKurus: number) =>
+      prisma.transaction.create({
+        data: {
+          userId: ids.user,
+          userCardId: card.id,
+          categoryId: ids.market,
+          amountKurus,
+          date: new Date(`${day}T00:00:00Z`),
+        },
+      });
+    await spend("2026-11-10", 150_000);
+    await spend("2026-11-22", 50_000);
+    await prisma.notificationLog.deleteMany({ where: { userId: ids.user } });
+
+    await runAt("2026-12-01");
+    const [mail] = reports();
+    expect(reports()).toHaveLength(1);
+    expect(mail?.subject).toBe("Kasım 2026 raporun: ~₺100 kazandın");
+    expect(mail?.text).toContain("bitiyor ~₺100");
+    expect(mail?.text).toContain("basladi ~₺100 · eşiğe ulaşılmadı");
+    expect(mail?.text).toContain("https://kartplan.test/plan/rapor?ay=2026-11");
+
+    mails.length = 0;
+    await runAt("2026-12-01");
+    expect(reports()).toEqual([]);
+    await prisma.transaction.deleteMany({ where: { userId: ids.user } });
   });
 
   it("gönderim hatası kaydedilmez, ertesi çalıştırmada yeniden denenir", async () => {

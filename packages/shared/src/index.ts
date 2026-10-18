@@ -6,6 +6,7 @@ export * from "./money";
 export * from "./notifications";
 export * from "./plan";
 export * from "./rates";
+export * from "./report";
 export * from "./spend";
 export * from "./statements";
 export * from "./transactions";

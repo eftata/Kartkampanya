@@ -5,12 +5,15 @@
  * - Katılım hatırlatma: katılım gerektiren, başlamış, son katılım günü geçmemiş, katılınmamış.
  * - Son günler: katıldığın ya da planındaki kampanyanın son 3 günü (bitiş günü dahil).
  * - Haftalık özet: Pazartesi, ISO haftası başına bir kez.
+ * - Ay sonu raporu: ayın 1'inde, geçen ay için bir kez (harcama girilmişse; çalıştırıcı denetler).
  */
 import type { MyCampaignDto, NotificationPrefs } from "@kartplan/shared";
 
 import { daysBetween } from "@/lib/campaign-match";
+import { previousMonth } from "@/lib/month-report";
 
-export type NotificationKind = "JOIN_REMINDER" | "ENDING_SOON" | "WEEKLY_SUMMARY";
+export type NotificationKind =
+  "JOIN_REMINDER" | "ENDING_SOON" | "WEEKLY_SUMMARY" | "MONTHLY_REPORT";
 
 export const ENDING_SOON_DAYS = 3;
 
@@ -31,6 +34,8 @@ export type Picked = {
   endingSoon: MyCampaignDto[];
   /** Haftalık özetin anahtarı (gönderilecekse). */
   weekly: string | null;
+  /** Raporu gidecek ay ("2026-10"; gönderilecekse). */
+  monthly: string | null;
 };
 
 export function pickNotifications({
@@ -39,6 +44,7 @@ export function pickNotifications({
   sent,
   prefs,
   forceWeekly = false,
+  forceMonthly = false,
 }: {
   campaigns: MyCampaignDto[];
   today: string;
@@ -46,6 +52,7 @@ export function pickNotifications({
   sent: Set<string>;
   prefs: NotificationPrefs;
   forceWeekly?: boolean;
+  forceMonthly?: boolean;
 }): Picked {
   const notSent = (kind: NotificationKind, key: string) => !sent.has(`${kind}:${key}`);
   const joinReminders = prefs.joinReminder
@@ -72,5 +79,12 @@ export function pickNotifications({
     prefs.weeklySummary && (isMonday(today) || forceWeekly) && notSent("WEEKLY_SUMMARY", week)
       ? week
       : null;
-  return { joinReminders, endingSoon, weekly };
+  const lastMonth = previousMonth(today.slice(0, 7));
+  const monthly =
+    prefs.monthlyReport &&
+    (today.endsWith("-01") || forceMonthly) &&
+    notSent("MONTHLY_REPORT", lastMonth)
+      ? lastMonth
+      : null;
+  return { joinReminders, endingSoon, weekly, monthly };
 }

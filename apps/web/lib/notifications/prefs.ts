@@ -28,7 +28,7 @@ export async function unsubscribe(userId: string, target: UnsubscribeTarget): Pr
   const prefs = parseNotificationPrefs(user.notifyPrefs);
   const next: NotificationPrefs =
     target === "all"
-      ? { joinReminder: false, endingSoon: false, weeklySummary: false }
+      ? { joinReminder: false, endingSoon: false, weeklySummary: false, monthlyReport: false }
       : { ...prefs, [target]: false };
   await saveNotificationPrefs(userId, next);
   return true;

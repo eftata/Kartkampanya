@@ -7,7 +7,8 @@ import { runNotifications } from "@/lib/notifications/run";
 export const maxDuration = 300;
 
 /**
- * Günlük bildirim işi (Vercel Cron). `?weekly=1` haftalık özeti Pazartesi beklemeden gönderir,
+ * Günlük bildirim işi (Vercel Cron). `?weekly=1` haftalık özeti Pazartesi beklemeden, `?monthly=1`
+ * geçen ayın raporunu ayın 1'ini beklemeden gönderir,
  * `?user=<id>` yalnızca o kullanıcıyı işler (elle deneme ve e2e).
  */
 export async function GET(request: Request) {
@@ -22,6 +23,7 @@ export async function GET(request: Request) {
       base: appBaseUrl(request),
       secret,
       forceWeekly: params.get("weekly") === "1",
+      forceMonthly: params.get("monthly") === "1",
       ...(user ? { userIds: [user] } : {}),
     })),
   });

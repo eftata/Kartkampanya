@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
@@ -53,6 +54,9 @@ async function PlanContent() {
       <p className="text-muted-foreground flex flex-wrap items-center gap-3 text-xs">
         <span>Son hesaplama: {computedFormat.format(view.computedAt)}</span>
         <RecomputePlanButton />
+        <Link href="/plan/rapor" className="underline">
+          Ay sonu raporu
+        </Link>
       </p>
     </div>
   );

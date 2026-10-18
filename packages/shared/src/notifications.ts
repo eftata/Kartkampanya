@@ -11,6 +11,8 @@ export const NotificationPrefs = z.object({
   endingSoon: z.boolean().default(true),
   /** Pazartesi: bu ayın planının özeti. */
   weeklySummary: z.boolean().default(true),
+  /** Ayın 1'i: geçen ayın raporu (kazanılan / kaçırılan; Faz 2). */
+  monthlyReport: z.boolean().default(true),
 });
 export type NotificationPrefs = z.infer<typeof NotificationPrefs>;
 export type NotificationPref = keyof NotificationPrefs;
@@ -27,11 +29,20 @@ export function parseNotificationPrefs(value: unknown): NotificationPrefs {
     joinReminder: field("joinReminder"),
     endingSoon: field("endingSoon"),
     weeklySummary: field("weeklySummary"),
+    monthlyReport: field("monthlyReport"),
   };
 }
 
-/** `PUT /api/me/notifications`: tercihlerin tamamı (üç alan da zorunlu). */
+/**
+ * `PUT /api/me/notifications`: tercihlerin tamamı. `monthlyReport` sonradan eklendi; eski
+ * istemciler göndermezse açık kalır.
+ */
 export const NotificationPrefsInput = z
-  .object({ joinReminder: z.boolean(), endingSoon: z.boolean(), weeklySummary: z.boolean() })
+  .object({
+    joinReminder: z.boolean(),
+    endingSoon: z.boolean(),
+    weeklySummary: z.boolean(),
+    monthlyReport: z.boolean().default(true),
+  })
   .strict();
 export type NotificationPrefsInput = z.infer<typeof NotificationPrefsInput>;

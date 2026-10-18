@@ -22,6 +22,11 @@ const OPTIONS: { key: keyof NotificationPrefs; label: string; hint: string }[] =
     label: "Haftalık plan özeti",
     hint: "Pazartesileri bu ayın planı.",
   },
+  {
+    key: "monthlyReport",
+    label: "Ay sonu raporu",
+    hint: "Her ayın 1'inde geçen ay kazandıkların ve kaçırdıkların (harcama girdiysen).",
+  },
 ];
 
 /** Bildirim tercihleri (Profilim). Kaydet'e basınca hepsi birlikte yazılır. */

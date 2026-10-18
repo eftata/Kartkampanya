@@ -5,6 +5,8 @@ import { parseNotificationPrefs } from "@kartplan/shared";
 
 import { turkeyToday } from "@/lib/campaign-match";
 import { getMyCampaigns } from "@/lib/campaigns";
+import { previousMonth } from "@/lib/month-report";
+import { getMonthReport } from "@/lib/month-report-data";
 import { sendMail } from "@/lib/email/send";
 import type { SendMail } from "@/lib/email/send";
 import { isoWeek, pickNotifications } from "@/lib/notifications/pick";
@@ -12,6 +14,7 @@ import type { NotificationKind } from "@/lib/notifications/pick";
 import {
   endingSoonEmail,
   joinReminderEmail,
+  monthlyReportEmail,
   weeklySummaryEmail,
 } from "@/lib/notifications/templates";
 import type { Email, Links } from "@/lib/notifications/templates";
@@ -36,6 +39,7 @@ export async function runNotifications({
   secret,
   today = turkeyToday(),
   forceWeekly = false,
+  forceMonthly = false,
   send = sendMail,
   userIds,
 }: {
@@ -45,6 +49,7 @@ export async function runNotifications({
   secret: string;
   today?: string;
   forceWeekly?: boolean;
+  forceMonthly?: boolean;
   send?: SendMail;
   /** Yalnızca bu kullanıcılar (testler ve elle çalıştırma). */
   userIds?: string[];
@@ -52,7 +57,7 @@ export async function runNotifications({
   const prisma = getPrisma();
   const stats: NotificationStats = {
     users: 0,
-    sent: { JOIN_REMINDER: 0, ENDING_SOON: 0, WEEKLY_SUMMARY: 0 },
+    sent: { JOIN_REMINDER: 0, ENDING_SOON: 0, WEEKLY_SUMMARY: 0, MONTHLY_REPORT: 0 },
     failed: 0,
   };
   const users = await prisma.user.findMany({
@@ -68,7 +73,7 @@ export async function runNotifications({
 
   for (const user of users) {
     const prefs = parseNotificationPrefs(user.notifyPrefs);
-    if (!prefs.joinReminder && !prefs.endingSoon && !prefs.weeklySummary) continue;
+    if (!Object.values(prefs).some(Boolean)) continue;
     stats.users += 1;
     const links: Links = {
       base,
@@ -97,8 +102,12 @@ export async function runNotifications({
     try {
       const campaigns = await getMyCampaigns(user.id, { sort: "ends" }, today);
       const week = isoWeek(today);
+      const lastMonth = previousMonth(today.slice(0, 7));
       const logs = await prisma.notificationLog.findMany({
-        where: { userId: user.id, key: { in: [...campaigns.map((c) => c.id), week] } },
+        where: {
+          userId: user.id,
+          key: { in: [...campaigns.map((c) => c.id), week, lastMonth] },
+        },
         select: { kind: true, key: true },
       });
       const picked = pickNotifications({
@@ -107,6 +116,7 @@ export async function runNotifications({
         sent: new Set(logs.map((log) => `${log.kind}:${log.key}`)),
         prefs,
         forceWeekly,
+        forceMonthly,
       });
       if (picked.joinReminders.length) {
         await deliver(
@@ -148,6 +158,32 @@ export async function runNotifications({
             ),
             "WEEKLY_SUMMARY",
             [picked.weekly],
+          );
+        }
+      }
+      if (picked.monthly) {
+        // Yalnızca o ay harcama girdiyse (aksi halde rapor boş ve anlamsız).
+        const report = await getMonthReport(user.id, picked.monthly, today);
+        if (report.spentKurus > 0) {
+          await deliver(
+            monthlyReportEmail(
+              {
+                month: report.month,
+                monthLabel: monthLabel(report.month),
+                campaignEarnedKurus: report.campaignEarnedKurus,
+                baseEarnedKurus: report.baseEarnedKurus,
+                earned: report.earned,
+                missed: report.missed.map((item) => ({
+                  id: item.id,
+                  title: item.title,
+                  rewardKurus: item.rewardKurus,
+                  note: item.reason === "not_joined" ? "katılmadın" : "eşiğe ulaşılmadı",
+                })),
+              },
+              links,
+            ),
+            "MONTHLY_REPORT",
+            [picked.monthly],
           );
         }
       }

@@ -14,6 +14,7 @@ const LABELS: Record<UnsubscribeTarget, string> = {
   joinReminder: "Katılım hatırlatma e-postaları",
   endingSoon: "“Kampanya bitmek üzere” e-postaları",
   weeklySummary: "Haftalık plan özeti",
+  monthlyReport: "Ay sonu raporu",
   all: "Tüm bildirim e-postaları",
 };
 

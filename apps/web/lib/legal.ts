@@ -17,7 +17,7 @@ export const CONSENT_KINDS = {
 } as const;
 
 export const LEGAL_VERSIONS = {
-  aydinlatma: "2026-10-18.5",
+  aydinlatma: "2026-10-18.6",
   acikRiza: "2026-10-18",
   pazarlama: "2026-10-17",
 } as const;
@@ -53,7 +53,7 @@ export const AYDINLATMA_METNI: LegalSection[] = [
   {
     title: "İşleme amaçları ve hukuki sebepler",
     paragraphs: [
-      "Hesabının oluşturulması, girişin sağlanması, geri bildirimlerinin değerlendirilip sana dönülmesi, kartlarına ve harcama alanlarına uyan kampanyaların listelenmesi, aylık harcama planının hesaplanması ve hizmet bildirimlerinin (katılım hatırlatma, kampanya bitiş uyarısı, haftalık özet) gönderilmesi: sözleşmenin kurulması ve ifası (KVKK m. 5/2-c).",
+      "Hesabının oluşturulması, girişin sağlanması, geri bildirimlerinin değerlendirilip sana dönülmesi, kartlarına ve harcama alanlarına uyan kampanyaların listelenmesi, aylık harcama planının hesaplanması ve hizmet bildirimlerinin (katılım hatırlatma, kampanya bitiş uyarısı, haftalık özet, ay sonu raporu) gönderilmesi: sözleşmenin kurulması ve ifası (KVKK m. 5/2-c).",
       "Hizmetin güvenliği, kötüye kullanımın önlenmesi (istek sınırlama) ve hataların giderilmesi: meşru menfaat (KVKK m. 5/2-f) ve hukuki yükümlülük (m. 5/2-ç).",
       "Hizmetin hangi adımlarının kullanıldığını ve kullanıcıların geri dönüp dönmediğini ölçüp geliştirmek (kullanım istatistikleri, kullanım günleri): meşru menfaat (KVKK m. 5/2-f).",
       "Pazarlama iletileri: yalnızca ayrıca izin verirsen (açık rıza, m. 5/1); izin vermemen hizmeti kullanmana engel değildir.",
