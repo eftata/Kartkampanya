@@ -1,5 +1,7 @@
 # Deploy — staging (Vercel + Railway)
 
+> Ücretsiz deneme ortamı (Vercel Hobby + Neon + Render + Brevo): [`deploy-free.md`](deploy-free.md).
+
 Sprint 0 kabulü: staging adresinde kayıt olup giriş yapılabiliyor. Bu doküman sıfırdan staging
 ortamını kurar. Production (Sprint 6) aynı adımları ayrı projelerle tekrarlar.
 
