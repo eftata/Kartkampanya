@@ -59,6 +59,33 @@ npm run deploy       # build + kurallar + hosting
 Deploy edilen sürüm Firebase yapılandırmasını `/__/firebase/init.json`'dan kendisi alır; `.env`
 gerekmez.
 
+### GitHub Actions ile deploy (önerilen)
+
+`.github/workflows/firebase-deploy.yml` varsayılan dala her push'ta (yalnızca `kartplan-lite/`
+değişince) test + build yapıp Hosting'i ve Firestore kurallarını kurar. Actions → “Firebase deploy”
+→ **Run workflow** ile elle de çalışır. Bir kerelik kurulum:
+
+1. **Proje:** [Firebase konsolu](https://console.firebase.google.com) → _Proje ekle_ → bir ad ver
+   (Analytics gerekmez). Proje kimliğini (ör. `kartplan-1a2b3`) not et.
+2. **Firestore:** _Build → Firestore Database → Create database_ → konum `eur3` (ya da
+   `europe-west`) → _production mode_.
+3. **Giriş yöntemleri:** _Build → Authentication → Get started → Sign-in method_ →
+   **E-posta/Şifre** ve **Google**'ı aç (Google için destek e-postası seç).
+4. **Hosting:** _Build → Hosting → Get started_ (sihirbazdaki komutları çalıştırmana gerek yok,
+   yalnızca etkinleştir).
+5. **Servis hesabı:** [Google Cloud konsolu → IAM → Service accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
+   (üstte doğru proje seçili) → _Create service account_ → ad `github-deploy` → roller:
+   **Firebase Admin** ve **Service Usage Consumer** → oluştur → hesabın _Keys_ sekmesi →
+   _Add key → JSON_. İnen dosyayı kimseyle paylaşma, işin bitince bilgisayarından sil.
+6. **GitHub:** repo → _Settings → Secrets and variables → Actions_:
+   - _Secrets_ sekmesi → `FIREBASE_SERVICE_ACCOUNT` = JSON dosyasının tüm içeriği
+   - _Variables_ sekmesi → `FIREBASE_PROJECT_ID` = proje kimliği
+7. PR'ı birleştir (ya da Actions'tan _Run workflow_). İş bitince uygulama
+   `https://<proje-kimliği>.web.app` adresinde.
+8. Sitede giriş yap, ardından _İlk admin_ adımını uygula.
+
+`FIREBASE_PROJECT_ID` tanımlı değilse iş atlanır; tanımlı ama anahtar yoksa hata verir.
+
 ### Emülatörle (bulut projesi olmadan)
 
 ```bash
