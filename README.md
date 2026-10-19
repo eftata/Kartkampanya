@@ -8,6 +8,9 @@ en çok kazanacağını gösteren aylık plan al.
 - Mimari kararlar: [`docs/adr/`](docs/adr)
 - Staging deploy ve CI: [`docs/deploy.md`](docs/deploy.md)
 
+> **Sade sürüm:** yalnızca Firebase (Hosting + Auth + Firestore) ile çalışan hafif uygulama
+> [`kartplan-lite/`](kartplan-lite/README.md) altında.
+
 ## Gereksinimler
 
 - Node.js 22+ (`.nvmrc`) ve pnpm 10 (`corepack enable`)
