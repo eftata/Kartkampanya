@@ -1,0 +1,47 @@
+rules_version = '2';
+
+// KartPlan Lite — Firestore güvenlik kuralları.
+//   cards/{id}      katalog: herkes okur, yalnızca admin yazar
+//   campaigns/{id}  yayındakini herkes, taslağı admin okur; yalnızca admin yazar
+//   users/{uid}     yalnızca sahibi okur/yazar; alanlar ve boyutlar sınırlı
+//   admins/{uid}    konsoldan elle eklenir; kullanıcı yalnızca kendi kaydını okuyabilir
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function validUser(d) {
+      return d.keys().hasOnly(['cardIds', 'spend', 'joined', 'onboarded', 'consentVersion', 'updatedAt'])
+        && (!('cardIds' in d) || (d.cardIds is list && d.cardIds.size() <= 30))
+        && (!('spend' in d) || (d.spend is map && d.spend.size() <= 20))
+        && (!('joined' in d) || (d.joined is map && d.joined.size() <= 500))
+        && (!('onboarded' in d) || d.onboarded is bool)
+        && (!('consentVersion' in d) || d.consentVersion is int);
+    }
+
+    match /cards/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /campaigns/{id} {
+      allow read: if resource.data.status == 'yayinda' || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /users/{uid} {
+      allow read, delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid && validUser(request.resource.data);
+    }
+
+    match /admins/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+  }
+}

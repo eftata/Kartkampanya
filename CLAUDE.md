@@ -366,3 +366,10 @@ campaignPath` (`/kampanyalar/<slug>-<id>`, id cuid → son tireden sonrası); fa
 3. `.env.example`, migration/seed ve gerekiyorsa ADR güncel.
 4. `docs/ROADMAP.md`'deki ilgili kutu işaretlendi.
 5. Oturum sonunda commit atıldı.
+
+## Sade sürüm (`kartplan-lite/`) — ayrıntı: kartplan-lite/README.md
+
+- Bağımsız Vite + React + Firebase (Auth, Firestore, Hosting) uygulaması; pnpm workspace'ine dahil
+  değil, `npm` ile yönetilir (`npm test`, `npm run build`, `npm run deploy`).
+- Plan tarayıcıda: `src/lib/optimizer.ts` (açgözlü), tek alışveriş `src/lib/advisor.ts`. Firestore
+  erişimi yalnızca `src/lib/data.ts`; yetki `firestore.rules`. Aynı para/KVKK kuralları geçerli.

@@ -1,0 +1,47 @@
+name: Firebase deploy (kartplan-lite)
+
+# kartplan-lite'ı Firebase Hosting'e ve Firestore kurallarını Firebase'e kurar.
+# Gerekenler (kurulum: kartplan-lite/README.md → "GitHub Actions ile deploy"):
+#   vars.FIREBASE_PROJECT_ID          repo değişkeni (proje kimliği)
+#   secrets.FIREBASE_SERVICE_ACCOUNT  servis hesabı JSON anahtarı
+# Değişken tanımlı değilse iş atlanır (CI kırmızıya dönmez).
+
+on:
+  push:
+    paths:
+      - "kartplan-lite/**"
+      - ".github/workflows/firebase-deploy.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build + deploy
+    if: >-
+      vars.FIREBASE_PROJECT_ID != '' &&
+      (github.event_name == 'workflow_dispatch' || github.ref_name == github.event.repository.default_branch)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: kartplan-lite
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: kartplan-lite/package-lock.json
+      - name: Test, build, deploy
+        env:
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: npm run deploy:ci
