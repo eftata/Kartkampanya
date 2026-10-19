@@ -86,6 +86,16 @@ değişince) test + build yapıp Hosting'i ve Firestore kurallarını kurar. Act
 
 `FIREBASE_PROJECT_ID` tanımlı değilse iş atlanır; tanımlı ama anahtar yoksa hata verir.
 
+### Claude Code bulut oturumundan deploy
+
+Ortam ayarlarına (oturum başlığındaki bulut ortamı menüsü → _Edit_) iki ortam değişkeni ekle:
+`FIREBASE_PROJECT_ID` ve `FIREBASE_SERVICE_ACCOUNT` (servis hesabı JSON'unun tüm içeriği; nasıl
+alınacağı yukarıda 1–5. adımlarda). Yeni oturumda:
+
+```bash
+cd kartplan-lite && npm run deploy:ci   # npm ci + test + build + firebase deploy
+```
+
 ### Emülatörle (bulut projesi olmadan)
 
 ```bash

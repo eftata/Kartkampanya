@@ -40,23 +40,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: kartplan-lite/package-lock.json
-      - run: npm ci
-      - run: npm test
-      - run: npm run build
-      - name: Write service account key
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: |
-          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
-            echo "::error::FIREBASE_SERVICE_ACCOUNT secret'ı tanımlı değil (kartplan-lite/README.md)."
-            exit 1
-          fi
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
-          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
-      - name: Deploy hosting + Firestore rules
+      - name: Test, build, deploy
         env:
           FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
-        run: npx --yes firebase-tools@15.34.0 deploy --only hosting,firestore --project "$FIREBASE_PROJECT_ID" --non-interactive
-      - name: Remove key
-        if: always()
-        run: rm -f "$RUNNER_TEMP/sa.json"
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: npm run deploy:ci
